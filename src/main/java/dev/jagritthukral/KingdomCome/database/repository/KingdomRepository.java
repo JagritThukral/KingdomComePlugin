@@ -12,6 +12,7 @@ import dev.jagritthukral.KingdomCome.models.KingdomPlayerRole;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -26,27 +27,29 @@ public class KingdomRepository {
 
     public CompletableFuture<Optional<Kingdom>> findKingdomByName(String name) {
         return CompletableFuture.supplyAsync(() -> {
-            String query = "SELECT * from Kingdoms WHERE name = ?;";
-            try (Connection connection = db.getConnection(); PreparedStatement stmt = connection.prepareStatement(query)) {
-                stmt.setString(1, name);
-                try (ResultSet result = stmt.executeQuery()) {
-                    if (result.next()) {
-                        String worldName = result.getString("home_world");
-                        double x = result.getDouble("home_x");
-                        boolean xNull = result.wasNull();
-                        double y = result.getDouble("home_y");
-                        boolean yNull = result.wasNull();
-                        double z = result.getDouble("home_z");
-                        boolean zNull = result.wasNull();
-                        Optional<KingdomHome> home = (worldName == null || worldName.isEmpty() || xNull || yNull || zNull)
+            String findKingdomByNameSql = "SELECT * from Kingdoms WHERE name = ?;";
+            try (Connection connection = db.getConnection(); PreparedStatement findKingdomByNameStmt = connection.prepareStatement(findKingdomByNameSql)) {
+                findKingdomByNameStmt.setString(1, name);
+                try (ResultSet kingdomResultSet = findKingdomByNameStmt.executeQuery()) {
+                    if (kingdomResultSet.next()) {
+                        String worldUuidString = kingdomResultSet.getString("home_world_uuid");
+                        boolean worldNull = worldUuidString == null || worldUuidString.isEmpty();
+                        UUID worldUuid = worldNull ? null : UUID.fromString(worldUuidString);
+                        double x = kingdomResultSet.getDouble("home_x");
+                        boolean xNull = kingdomResultSet.wasNull();
+                        double y = kingdomResultSet.getDouble("home_y");
+                        boolean yNull = kingdomResultSet.wasNull();
+                        double z = kingdomResultSet.getDouble("home_z");
+                        boolean zNull = kingdomResultSet.wasNull();
+                        Optional<KingdomHome> home = (worldNull || xNull || yNull || zNull)
                                 ? Optional.empty()
-                                : Optional.of(new KingdomHome(worldName, x, y, z));
+                                : Optional.of(new KingdomHome(worldUuid, x, y, z));
 
                         return Optional.of(new Kingdom(
-                                result.getInt("kingdom_id"),
-                                result.getString("leader_uuid"),
+                                kingdomResultSet.getInt("kingdom_id"),
+                                kingdomResultSet.getString("leader_uuid"),
                                 name,
-                                LocalDateTime.parse(result.getString("created_at")),
+                                LocalDateTime.parse(kingdomResultSet.getString("created_at")),
                                 home
                         ));
                     }
@@ -122,14 +125,16 @@ public class KingdomRepository {
 
     public CompletableFuture<KingdomHome> getKingdomHome(int kingdomId) {
         return CompletableFuture.supplyAsync(() -> {
-            String getHomeSql = "SELECT home_world, home_x, home_y, home_z FROM Kingdoms WHERE kingdom_id = ?;";
+            String getHomeSql = "SELECT home_world_uuid, home_x, home_y, home_z FROM Kingdoms WHERE kingdom_id = ?;";
             try (Connection connection = db.getConnection(); PreparedStatement getHomeStmt = connection.prepareStatement(getHomeSql)) {
                 getHomeStmt.setInt(1, kingdomId);
                 try (ResultSet homeResult = getHomeStmt.executeQuery()) {
                     if (!homeResult.next()) {
                         throw new KingdomNotFoundException();
                     }
-                    String world_name = homeResult.getString("home_world");
+                    String worldUuidString = homeResult.getString("home_world_uuid");
+                    boolean worldNull = worldUuidString == null || worldUuidString.isEmpty();
+                    UUID worldUuid = worldNull ? null : UUID.fromString(worldUuidString);
                     double x = homeResult.getDouble("home_x");
                     boolean xNull = homeResult.wasNull();
                     double y = homeResult.getDouble("home_y");
@@ -137,11 +142,11 @@ public class KingdomRepository {
                     double z = homeResult.getDouble("home_z");
                     boolean zNull = homeResult.wasNull();
 
-                    if (world_name == null || world_name.isEmpty() || xNull || yNull || zNull) {
+                    if (worldNull || xNull || yNull || zNull) {
                         throw new KingdomHomeNotSetException();
                     }
 
-                    return new KingdomHome(world_name, x, y, z);
+                    return new KingdomHome(worldUuid, x, y, z);
                 }
 
 
@@ -153,9 +158,9 @@ public class KingdomRepository {
 
     public CompletableFuture<Void> setKingdomHome(int kingdomId, KingdomHome home) {
         return CompletableFuture.runAsync(() -> {
-            String addHomeSql = "UPDATE Kingdoms SET home_world = ?,home_x = ?,home_y = ?,home_z = ? WHERE kingdom_id = ?;";
+            String addHomeSql = "UPDATE Kingdoms SET home_world_uuid = ?,home_x = ?,home_y = ?,home_z = ? WHERE kingdom_id = ?;";
             try (Connection connection = db.getConnection(); PreparedStatement addHomeStmt = connection.prepareStatement(addHomeSql)) {
-                addHomeStmt.setString(1, home.world_name());
+                addHomeStmt.setString(1, home.world_uuid().toString());
                 addHomeStmt.setDouble(2, home.x());
                 addHomeStmt.setDouble(3, home.y());
                 addHomeStmt.setDouble(4, home.z());
