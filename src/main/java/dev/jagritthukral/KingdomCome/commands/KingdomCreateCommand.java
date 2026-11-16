@@ -1,5 +1,6 @@
 package dev.jagritthukral.KingdomCome.commands;
 
+import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -43,6 +44,6 @@ public class KingdomCreateCommand {
                 .on(DuplicateKingdomException.class, "That kingdom name is already taken!")
                 .run();
 
-        return 1;
+        return Command.SINGLE_SUCCESS;
     }
 }

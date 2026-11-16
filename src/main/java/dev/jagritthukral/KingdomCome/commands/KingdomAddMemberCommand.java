@@ -1,5 +1,6 @@
 package dev.jagritthukral.KingdomCome.commands;
 
+import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -62,6 +63,6 @@ public class KingdomAddMemberCommand {
                 .on(MissingKingdomPermissionException.class, e -> executorPlayer.sendMessage(e.getMessage()))
                 .on(AlreadyInKingdomException.class, AlreadyInKingdomException.message)
                 .run();
-        return 1;
+        return Command.SINGLE_SUCCESS;
     }
 }

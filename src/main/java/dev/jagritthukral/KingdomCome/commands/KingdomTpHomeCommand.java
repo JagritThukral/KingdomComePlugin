@@ -1,5 +1,6 @@
 package dev.jagritthukral.KingdomCome.commands;
 
+import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import dev.jagritthukral.KingdomCome.database.repository.KingdomRepository;
@@ -55,6 +56,6 @@ public class KingdomTpHomeCommand {
                 .on(MissingKingdomMembershipException.class, "You need to be member of a kingdom to tp to its home")
                 .on(KingdomHomeNotSetException.class, "Kingdom's home location has not been set")
                 .run();
-        return 1;
+        return Command.SINGLE_SUCCESS;
     }
 }

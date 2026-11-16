@@ -1,5 +1,6 @@
 package dev.jagritthukral.KingdomCome.commands;
 
+import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import dev.jagritthukral.KingdomCome.database.repository.ClaimRepository;
@@ -62,7 +63,7 @@ public class KingdomClaimCommand {
                 .on(MissingKingdomMembershipException.class, _ -> player.sendMessage("You need to be a leader or duke of a kingdom to claim a chunk"))
                 .on(MissingKingdomPermissionException.class, e -> player.sendMessage(e.getMessage()))
                 .run();
-        return 1;
+        return Command.SINGLE_SUCCESS;
     }
 
 }
