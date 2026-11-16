@@ -40,17 +40,18 @@ public class ClaimRepository {
         }, asyncExecutor);
     }
 
-    public CompletableFuture<ClaimStatus> claimChunk(int claimKingdomId, int chunkX, int chunkZ) {
+    public CompletableFuture<ClaimStatus> claimChunk(int claimKingdomId, int chunkX, int chunkZ, String worldUuid) {
         return CompletableFuture.supplyAsync(() -> {
             String getKingdomIdOfClaimSql = "SELECT kingdom_id FROM Claims WHERE chunk_x = ? AND chunk_z = ?;";
-            String insertClaimSql = "INSERT INTO Claims (kingdom_id, chunk_x, chunk_z) VALUES (?, ?, ?);";
+            String insertClaimSql = "INSERT INTO Claims (kingdom_id, chunk_x, chunk_z,world_uuid) VALUES (?, ?, ?, ?);";
 
             try (Connection connection = db.getConnection()) {
                 // Check who currently owns the chunk
                 try (PreparedStatement getKingdomIdOfClaimStmt = connection.prepareStatement(getKingdomIdOfClaimSql)) {
-                    getKingdomIdOfClaimStmt.setInt(1, chunkX);
-                    getKingdomIdOfClaimStmt.setInt(2, chunkZ);
-
+                    getKingdomIdOfClaimStmt.setInt(1, claimKingdomId);
+                    getKingdomIdOfClaimStmt.setInt(2, chunkX);
+                    getKingdomIdOfClaimStmt.setInt(3, chunkZ);
+                    getKingdomIdOfClaimStmt.setString(4, worldUuid);
                     try (ResultSet resultSet = getKingdomIdOfClaimStmt.executeQuery()) {
                         if (resultSet.next()) {
                             int existingClaimKingdomId = resultSet.getInt("kingdom_id");

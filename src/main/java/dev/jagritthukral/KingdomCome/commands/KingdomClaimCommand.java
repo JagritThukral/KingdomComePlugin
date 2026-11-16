@@ -18,6 +18,7 @@ import org.bukkit.Chunk;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public class KingdomClaimCommand {
@@ -46,12 +47,13 @@ public class KingdomClaimCommand {
         Chunk chunk = player.getChunk();
         String uuid = player.getUniqueId().toString();
         int chunkX = chunk.getX(), chunkZ = chunk.getZ();
+        String worldUuidString = chunk.getWorld().getUID().toString();
         CompletableFuture<ClaimStatus> future = memberRepository.getKingdomMember(uuid)
                 .thenCompose(optionalKingdomMember -> {
                     KingdomMember member = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
                     if (!member.role().canClaimOrUnclaimChunks())
                         throw new MissingKingdomPermissionException(CLAIM_CHUNK);
-                    return claimRepository.claimChunk(member.kingdomId(), chunkX, chunkZ);
+                    return claimRepository.claimChunk(member.kingdomId(), chunkX, chunkZ, worldUuidString);
                 });
 
 

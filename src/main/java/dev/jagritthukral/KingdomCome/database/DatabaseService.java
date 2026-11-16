@@ -35,13 +35,13 @@ public class DatabaseService {
                         name TEXT NOT NULL UNIQUE,
                         leader_uuid TEXT NOT NULL,
                         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                        home_world TEXT,
+                        home_world_uuid TEXT,
                         home_x REAL,
                         home_y REAL,
                         home_z REAL,
                         CHECK (
-                            (home_world IS NULL AND home_x IS NULL AND home_y IS NULL AND home_z IS NULL) OR
-                            (home_world IS NOT NULL AND home_x IS NOT NULL AND home_y IS NOT NULL AND home_z IS NOT NULL)
+                            (home_world_uuid IS NULL AND home_x IS NULL AND home_y IS NULL AND home_z IS NULL) OR
+                            (home_world_uuid IS NOT NULL AND home_x IS NOT NULL AND home_y IS NOT NULL AND home_z IS NOT NULL)
                         )
                     );
                     CREATE TABLE IF NOT EXISTS Players(
@@ -57,6 +57,7 @@ public class DatabaseService {
                         kingdom_id INTEGER NOT NULL,
                         chunk_x INTEGER NOT NULL,
                         chunk_z INTEGER NOT NULL,
+                        world_uuid TEXT NOT NULL,
                         PRIMARY KEY (chunk_x, chunk_z),
                         FOREIGN KEY (kingdom_id)
                         REFERENCES Kingdoms(kingdom_id)
