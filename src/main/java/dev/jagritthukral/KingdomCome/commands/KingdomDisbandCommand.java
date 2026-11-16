@@ -1,5 +1,6 @@
 package dev.jagritthukral.KingdomCome.commands;
 
+import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -40,14 +41,18 @@ public class KingdomDisbandCommand {
 
 
             CommandAsyncUtils.handle(plugin, player, kingdomRepository.findKingdomByName(name).thenCompose(kingdomOptional -> {
-                Kingdom kingdom = kingdomOptional.orElseThrow(() -> new KingdomNotFoundException(name));
-                if (!isOp && !Objects.equals(kingdom.leaderUuid(), player.getUniqueId().toString())) {
-                    throw new MissingKingdomOwnershipException();
-                }
-                return kingdomRepository.disbandKingdom(name);
+                        Kingdom kingdom = kingdomOptional.orElseThrow(() -> new KingdomNotFoundException(name));
+                        if (!isOp && !Objects.equals(kingdom.leaderUuid(), player.getUniqueId().toString())) {
+                            throw new MissingKingdomOwnershipException();
+                        }
+                        return kingdomRepository.disbandKingdom(name);
 
-            })).onSuccess(_ -> player.sendMessage("Disbanded Kingdom " + name)).on(KingdomNotFoundException.class, "No kingdom named '" + name + "' was found.").on(MissingKingdomOwnershipException.class, "You are not the leader of this kingdom.\nOnly a leader can disband a kingdom.").run();
-            return 1;
+                    }))
+                    .onSuccess(_ -> player.sendMessage("Disbanded Kingdom " + name))
+                    .on(KingdomNotFoundException.class, "No kingdom named '" + name + "' was found.")
+                    .on(MissingKingdomOwnershipException.class, "You are not the leader of this kingdom.\nOnly a leader can disband a kingdom.")
+                    .run();
+            return Command.SINGLE_SUCCESS;
         } catch (Exception e) {
             source.getSender().sendMessage("An internal error occurred while running this command.");
             plugin.getSLF4JLogger().error(e.toString());
