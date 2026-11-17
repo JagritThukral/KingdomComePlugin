@@ -13,10 +13,11 @@ import java.sql.SQLException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 public class MemberRepository {
     private final DatabaseService db;
-    private final Executor asyncExecutor;
+    private final ExecutorService asyncExecutor;
 
     public MemberRepository(DatabaseService db) {
         this.db = db;

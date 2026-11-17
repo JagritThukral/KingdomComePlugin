@@ -15,10 +15,11 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 public class KingdomRepository {
     private final DatabaseService db;
-    private final Executor asyncExecutor;
+    private final ExecutorService asyncExecutor;
 
     public KingdomRepository(DatabaseService db) {
         this.db = db;

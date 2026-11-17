@@ -11,11 +11,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 public class ClaimRepository {
     private final DatabaseService db;
-    private final Executor asyncExecutor;
+    private final ExecutorService asyncExecutor;
 
     public ClaimRepository(DatabaseService db) {
         this.db = db;

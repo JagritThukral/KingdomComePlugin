@@ -8,16 +8,17 @@ import org.jspecify.annotations.NonNull;
 import java.io.File;
 import java.sql.*;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class DatabaseService {
     private final JavaPlugin plugin;
     private HikariDataSource dataSource;
-    private final Executor asyncExecutor;
+    private final ExecutorService asyncExecutor;
 
     public DatabaseService(JavaPlugin plugin) {
         this.plugin = plugin;
-        this.asyncExecutor =
-                runnable -> plugin.getServer().getAsyncScheduler().runNow(plugin, _ -> runnable.run());
+        this.asyncExecutor = Executors.newSingleThreadExecutor();
         initDatabase();
     }
 
@@ -105,7 +106,7 @@ public class DatabaseService {
         return dataSource.getConnection();
     }
 
-    public Executor getAsyncExecutor() {
+    public ExecutorService getAsyncExecutor() {
         return this.asyncExecutor;
     }
 
