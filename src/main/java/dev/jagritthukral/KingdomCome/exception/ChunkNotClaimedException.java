@@ -1,7 +1,7 @@
 package dev.jagritthukral.KingdomCome.exception;
 
 public class ChunkNotClaimedException extends KingdomException {
-    private static final String message = "This chunk has been claimed yet.";
+    private static final String message = "This chunk has not been claimed yet.";
 
     public ChunkNotClaimedException(Throwable cause) {
         super(message, cause);
