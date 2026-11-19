@@ -7,9 +7,10 @@ import org.jspecify.annotations.NonNull;
 
 import java.io.File;
 import java.sql.*;
-import java.util.concurrent.Executor;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class DatabaseService {
     private final JavaPlugin plugin;
@@ -35,7 +36,7 @@ public class DatabaseService {
                         kingdom_id INTEGER PRIMARY KEY AUTOINCREMENT,
                         name TEXT NOT NULL UNIQUE,
                         leader_uuid TEXT NOT NULL,
-                        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                        created_at BIGINT NOT NULL,
                         home_world_uuid TEXT,
                         home_x REAL,
                         home_y REAL,
@@ -59,7 +60,7 @@ public class DatabaseService {
                         chunk_x INTEGER NOT NULL,
                         chunk_z INTEGER NOT NULL,
                         world_uuid TEXT NOT NULL,
-                        PRIMARY KEY (chunk_x, chunk_z),
+                        PRIMARY KEY (chunk_x, chunk_z,world_uuid),
                         FOREIGN KEY (kingdom_id)
                         REFERENCES Kingdoms(kingdom_id)
                         ON DELETE CASCADE
@@ -110,7 +111,16 @@ public class DatabaseService {
         return this.asyncExecutor;
     }
 
-    public void close() {
+    public void close() throws InterruptedException {
+        // stop accepting new tasks
+        asyncExecutor.shutdown();
+        // wait for submitted task pending to be executed and if timeout happens log it I guess
+        boolean didTimeout = !asyncExecutor.awaitTermination(1, TimeUnit.MINUTES);
+        if (didTimeout) {
+            List<Runnable> failedTaskList = asyncExecutor.shutdownNow();
+            // to think: should I try to force run the tasks on current thread?
+            plugin.getSLF4JLogger().error("Failed to complete pending db tasks (count: {})", failedTaskList.size());
+        }
         if (dataSource != null && !dataSource.isClosed()) {
             dataSource.close();
         }

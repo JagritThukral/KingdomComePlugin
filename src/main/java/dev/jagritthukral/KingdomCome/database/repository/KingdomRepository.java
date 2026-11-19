@@ -10,11 +10,11 @@ import dev.jagritthukral.KingdomCome.models.KingdomHome;
 import dev.jagritthukral.KingdomCome.models.KingdomPlayerRole;
 
 import java.sql.*;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
 public class KingdomRepository {
@@ -50,7 +50,7 @@ public class KingdomRepository {
                                 kingdomResultSet.getInt("kingdom_id"),
                                 kingdomResultSet.getString("leader_uuid"),
                                 name,
-                                LocalDateTime.parse(kingdomResultSet.getString("created_at")),
+                                kingdomResultSet.getLong("created_at"),
                                 home
                         ));
                     }
@@ -65,15 +65,16 @@ public class KingdomRepository {
     public CompletableFuture<Kingdom> createKingdomWithLeader(String name, String leaderUuid) {
         return CompletableFuture.supplyAsync(() -> {
 
-            String insertKingdomSql = "INSERT INTO Kingdoms (name, leader_uuid) VALUES (?, ?);";
+            String insertKingdomSql = "INSERT INTO Kingdoms (name, leader_uuid,created_at) VALUES (?, ?, ?);";
             String insertPlayerSql = "INSERT INTO Players (kingdom_id, player_uuid, role) VALUES (?, ?, ?);";
-
+            long createdAt = Instant.now().getEpochSecond();
             try (Connection connection = db.getConnection()) {
                 connection.setAutoCommit(false);
                 try (PreparedStatement kingdomStmt = connection.prepareStatement(insertKingdomSql, Statement.RETURN_GENERATED_KEYS); PreparedStatement playerStmt = connection.prepareStatement(insertPlayerSql)) {
 
                     kingdomStmt.setString(1, name);
                     kingdomStmt.setString(2, leaderUuid);
+                    kingdomStmt.setLong(3, createdAt);
                     kingdomStmt.executeUpdate();
 
                     int kingdomId;
@@ -90,7 +91,7 @@ public class KingdomRepository {
                     playerStmt.executeUpdate();
 
                     connection.commit();
-                    return new Kingdom(kingdomId, leaderUuid, name, LocalDateTime.now(), Optional.empty());
+                    return new Kingdom(kingdomId, leaderUuid, name, createdAt, Optional.empty());
                 } catch (SQLException | RuntimeException e) {
                     connection.rollback();
                     throw e;

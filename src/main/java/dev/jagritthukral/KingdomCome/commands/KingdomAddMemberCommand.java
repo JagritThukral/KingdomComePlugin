@@ -45,8 +45,8 @@ public class KingdomAddMemberCommand {
             return 0;
         }
         String executorUuid = executorPlayer.getUniqueId().toString();
-        final PlayerSelectorArgumentResolver resolver = context.getArgument("target", PlayerSelectorArgumentResolver.class);
-        final Player targetPlayer = resolver.resolve(context.getSource()).getFirst();
+        PlayerSelectorArgumentResolver resolver = context.getArgument("PlayerName", PlayerSelectorArgumentResolver.class);
+        Player targetPlayer = resolver.resolve(context.getSource()).getFirst();
         String targetPlayerUuid = targetPlayer.getUniqueId().toString();
         CompletableFuture<Void> future = memberRepository.getKingdomMember(executorUuid)
                 .thenCompose(optionalKingdomMember -> {

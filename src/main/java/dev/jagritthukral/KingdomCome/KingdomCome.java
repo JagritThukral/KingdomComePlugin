@@ -52,7 +52,11 @@ public class KingdomCome extends JavaPlugin implements Listener {
     public void onDisable() {
         // Safely close the database connection pool on plugin disable/reload
         if (db != null) {
-            db.close();
+            try {
+                db.close();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

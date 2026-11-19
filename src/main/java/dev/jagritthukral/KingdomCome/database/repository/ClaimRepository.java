@@ -9,7 +9,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
@@ -22,19 +24,40 @@ public class ClaimRepository {
         this.asyncExecutor = db.getAsyncExecutor();
     }
 
-    public CompletableFuture<Optional<Claim>> getClaim(int chunkX, int chunkZ) {
+    public CompletableFuture<Optional<Claim>> getClaim(int chunkX, int chunkZ, String worldUuid) {
         return CompletableFuture.supplyAsync(() -> {
-            String query = "SELECT kingdom_id FROM Claims WHERE chunk_x = ? AND chunk_z = ?;";
-            try (Connection connection = db.getConnection(); PreparedStatement stmt = connection.prepareStatement(query)) {
-                stmt.setInt(1, chunkX);
-                stmt.setInt(2, chunkZ);
-                try (ResultSet result = stmt.executeQuery()) {
+            String getClaimByChunkCordsSql = "SELECT kingdom_id FROM Claims WHERE chunk_x = ? AND chunk_z = ? AND world_uuid = ?;";
+            try (Connection connection = db.getConnection(); PreparedStatement getClaimStmt = connection.prepareStatement(getClaimByChunkCordsSql)) {
+                getClaimStmt.setInt(1, chunkX);
+                getClaimStmt.setInt(2, chunkZ);
+                getClaimStmt.setString(3, worldUuid);
+                try (ResultSet result = getClaimStmt.executeQuery()) {
                     if (result.next()) {
-                        return Optional.of(new Claim(result.getInt("kingdom_id"), chunkX, chunkZ));
+                        return Optional.of(new Claim(result.getInt("kingdom_id"), chunkX, chunkZ, UUID.fromString(result.getString("world_uuid"))));
                     }
                     return Optional.empty();
                 }
             } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, asyncExecutor);
+    }
+
+    public CompletableFuture<ArrayList<Claim>> getAllClaims() {
+        return CompletableFuture.supplyAsync(() -> {
+            String getAllClaimsSql = "SELECT * FROM Claims;";
+            ArrayList<Claim> claimsList = new ArrayList<>();
+            try (Connection connection = db.getConnection(); PreparedStatement getAllClaimsStmt = connection.prepareStatement(getAllClaimsSql)) {
+                try (ResultSet claimsSet = getAllClaimsStmt.executeQuery()) {
+                    while (claimsSet.next()) {
+                        claimsList.add(new Claim(claimsSet.getInt("kingdom_id"), claimsSet.getInt("chunk_x"), claimsSet.getInt("chunk_z"), UUID.fromString(claimsSet.getString("world_uuid"))));
+                    }
+
+                    return claimsList;
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         }, asyncExecutor);
@@ -48,13 +71,11 @@ public class ClaimRepository {
             try (Connection connection = db.getConnection()) {
                 // Check who currently owns the chunk
                 try (PreparedStatement getKingdomIdOfClaimStmt = connection.prepareStatement(getKingdomIdOfClaimSql)) {
-                    getKingdomIdOfClaimStmt.setInt(1, claimKingdomId);
-                    getKingdomIdOfClaimStmt.setInt(2, chunkX);
-                    getKingdomIdOfClaimStmt.setInt(3, chunkZ);
-                    getKingdomIdOfClaimStmt.setString(4, worldUuid);
-                    try (ResultSet resultSet = getKingdomIdOfClaimStmt.executeQuery()) {
-                        if (resultSet.next()) {
-                            int existingClaimKingdomId = resultSet.getInt("kingdom_id");
+                    getKingdomIdOfClaimStmt.setInt(1, chunkX);
+                    getKingdomIdOfClaimStmt.setInt(2, chunkZ);
+                    try (ResultSet claimSet = getKingdomIdOfClaimStmt.executeQuery()) {
+                        if (claimSet.next()) {
+                            int existingClaimKingdomId = claimSet.getInt("kingdom_id");
                             // chunk already claimed by the user's kingdom
                             if (existingClaimKingdomId == claimKingdomId) {
                                 return ClaimStatus.ALREADY_OWNED_BY_YOU;
@@ -72,6 +93,7 @@ public class ClaimRepository {
                     insertClaimStmt.setInt(1, claimKingdomId);
                     insertClaimStmt.setInt(2, chunkX);
                     insertClaimStmt.setInt(3, chunkZ);
+                    insertClaimStmt.setString(4, worldUuid);
                     insertClaimStmt.executeUpdate();
 
                     return ClaimStatus.CLAIMED;

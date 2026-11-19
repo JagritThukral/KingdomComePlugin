@@ -3,6 +3,7 @@ package dev.jagritthukral.KingdomCome.commands;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import dev.jagritthukral.KingdomCome.database.repository.MemberRepository;
 import dev.jagritthukral.KingdomCome.exception.MissingKingdomMembershipException;
 import dev.jagritthukral.KingdomCome.exception.MissingKingdomPermissionException;
@@ -11,6 +12,7 @@ import dev.jagritthukral.KingdomCome.utils.CommandAsyncUtils;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
+import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -34,7 +36,7 @@ public class KingdomKickMemberCommand {
                 );
     }
 
-    private int kickCitizen(CommandContext<CommandSourceStack> context) {
+    private int kickCitizen(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
 
         if (!(source.getExecutor() instanceof Player executorPlayer)) {
@@ -42,7 +44,8 @@ public class KingdomKickMemberCommand {
             return 0;
         }
         String executorPlayerUuid = executorPlayer.getUniqueId().toString();
-        Player targetPlayer = context.getArgument("PlayerName", Player.class);
+        PlayerSelectorArgumentResolver resolver = context.getArgument("PlayerName", PlayerSelectorArgumentResolver.class);
+        Player targetPlayer = resolver.resolve(context.getSource()).getFirst();
         String targetPlayerUuid = targetPlayer.getUniqueId().toString();
         CompletableFuture<Void> future = memberRepository.getKingdomMember(executorPlayerUuid)
                 .thenCompose(optionalKingdomMember -> {

@@ -27,20 +27,21 @@ public class KingdomCreateCommand {
 
     public LiteralArgumentBuilder<CommandSourceStack> createCommand() {
         return Commands.literal("create")
+                .requires(source -> source.getSender().isOp() || source.getSender().hasPermission("kingdomcome.create"))
                 .then(Commands.argument("KingdomName", StringArgumentType.string())
                         .then(Commands.argument("leader_player", ArgumentTypes.player())
-                                .executes(this::createKingdom))
+                                .executes(context -> createKingdom(context, StringArgumentType.getString(context, "KingdomName"))))
 
                 );
     }
 
-    private int createKingdom(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        final String kingdomName = context.getArgument("KingdomName", StringArgumentType.class).toString();
-        final PlayerSelectorArgumentResolver resolver = context.getArgument("leader_player", PlayerSelectorArgumentResolver.class);
-        final Player leaderPlayer = resolver.resolve(context.getSource()).getFirst();
-        final String leaderPlayerUuid = leaderPlayer.getUniqueId().toString();
-        CommandAsyncUtils.handle(plugin, leaderPlayer, kingdomRepository.createKingdomWithLeader(kingdomName, leaderPlayerUuid))
-                .onSuccess(_ -> leaderPlayer.sendMessage("Kingdom '" + kingdomName + "' created successfully!"))
+    private int createKingdom(CommandContext<CommandSourceStack> context, String kingdomName) throws CommandSyntaxException {
+        PlayerSelectorArgumentResolver resolver = context.getArgument("leader_player", PlayerSelectorArgumentResolver.class);
+        Player executorPlayer = context.getSource().getPlayerOrThrow();
+        Player leaderPlayer = resolver.resolve(context.getSource()).getFirst();
+        String leaderPlayerUuid = leaderPlayer.getUniqueId().toString();
+        CommandAsyncUtils.handle(plugin, executorPlayer, kingdomRepository.createKingdomWithLeader(kingdomName, leaderPlayerUuid))
+                .onSuccess(_ -> executorPlayer.sendMessage("Kingdom '" + kingdomName + "' created successfully!"))
                 .on(DuplicateKingdomException.class, "That kingdom name is already taken!")
                 .run();
 

@@ -8,6 +8,7 @@ import dev.jagritthukral.KingdomCome.database.repository.MemberRepository;
 import dev.jagritthukral.KingdomCome.exception.KingdomHomeNotSetException;
 import dev.jagritthukral.KingdomCome.exception.KingdomNotFoundException;
 import dev.jagritthukral.KingdomCome.exception.MissingKingdomMembershipException;
+import dev.jagritthukral.KingdomCome.models.KingdomHome;
 import dev.jagritthukral.KingdomCome.models.KingdomMember;
 import dev.jagritthukral.KingdomCome.utils.CommandAsyncUtils;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -42,14 +43,11 @@ public class KingdomTpHomeCommand {
         }
         String executorPlayerUuid = executorPlayer.getUniqueId().toString();
 
-        CompletableFuture<Void> future = memberRepository.getKingdomMember(executorPlayerUuid)
+        CompletableFuture<KingdomHome> future = memberRepository.getKingdomMember(executorPlayerUuid)
                 .thenCompose(optionalKingdomMember -> {
                     KingdomMember kingdomMember = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
                     int kingdomId = kingdomMember.kingdomId();
-                    return kingdomRepository.getKingdomHome(kingdomId).thenCompose(kingdomHome -> {
-                        executorPlayer.teleport(kingdomHome.getBukkitLocation());
-                        return null;
-                    });
+                    return kingdomRepository.getKingdomHome(kingdomId);
                 });
         CommandAsyncUtils.handle(plugin, executorPlayer, future)
                 .on(KingdomNotFoundException.class, "An issue while getting your kingdom occurred")
