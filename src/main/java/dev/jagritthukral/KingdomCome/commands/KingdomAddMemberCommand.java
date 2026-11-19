@@ -53,8 +53,7 @@ public class KingdomAddMemberCommand {
                             KingdomMember kingdomMember = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
                             if (!kingdomMember.role().canAddOrKickMembers())
                                 throw new MissingKingdomPermissionException(ADD_MEMBER);
-                            memberRepository.addKingdomMember(kingdomMember.kingdomId(), targetPlayerUuid);
-                            return null;
+                            return memberRepository.addKingdomMember(kingdomMember.kingdomId(), targetPlayerUuid);
                         }
                 );
         CommandAsyncUtils.handle(plugin, executorPlayer, future)
