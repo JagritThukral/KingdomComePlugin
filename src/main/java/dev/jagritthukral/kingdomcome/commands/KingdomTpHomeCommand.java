@@ -1,0 +1,61 @@
+package dev.jagritthukral.kingdomcome.commands;
+
+import com.mojang.brigadier.Command;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
+import dev.jagritthukral.kingdomcome.database.repository.KingdomRepository;
+import dev.jagritthukral.kingdomcome.database.repository.MemberRepository;
+import dev.jagritthukral.kingdomcome.exception.KingdomHomeNotSetException;
+import dev.jagritthukral.kingdomcome.exception.KingdomNotFoundException;
+import dev.jagritthukral.kingdomcome.exception.MissingKingdomMembershipException;
+import dev.jagritthukral.kingdomcome.models.KingdomHome;
+import dev.jagritthukral.kingdomcome.models.KingdomMember;
+import dev.jagritthukral.kingdomcome.utils.CommandAsyncUtils;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
+import io.papermc.paper.command.brigadier.Commands;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.concurrent.CompletableFuture;
+
+public class KingdomTpHomeCommand {
+    private final JavaPlugin plugin;
+    private final MemberRepository memberRepository;
+    private final KingdomRepository kingdomRepository;
+
+    public KingdomTpHomeCommand(JavaPlugin plugin, MemberRepository memberRepository, KingdomRepository kingdomRepository) {
+        this.plugin = plugin;
+        this.memberRepository = memberRepository;
+        this.kingdomRepository = kingdomRepository;
+    }
+
+    public LiteralArgumentBuilder<CommandSourceStack> createCommand() {
+        return Commands.literal("tp_home")
+                .executes(this::tpToKingdomHome);
+    }
+
+    private int tpToKingdomHome(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+
+        if (!(source.getExecutor() instanceof Player executorPlayer)) {
+            source.getSender().sendMessage("Only players can use this command to teleport to their kingdom's home coordinates.");
+            return 0;
+        }
+        String executorPlayerUuid = executorPlayer.getUniqueId().toString();
+
+        CompletableFuture<KingdomHome> future = memberRepository.getKingdomMember(executorPlayerUuid)
+                .thenCompose(optionalKingdomMember -> {
+                    KingdomMember kingdomMember = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
+                    int kingdomId = kingdomMember.kingdomId();
+                    return kingdomRepository.getKingdomHome(kingdomId);
+                });
+        CommandAsyncUtils.handle(plugin, executorPlayer, future)
+                // todo: check if the completableFuture is handled because for proper error logging, have to unwrap from completableFuture
+                .onSuccess(home -> executorPlayer.teleportAsync(home.getBukkitLocation()))
+                .on(KingdomNotFoundException.class, "An issue while getting your kingdom occurred")
+                .on(MissingKingdomMembershipException.class, "You need to be member of a kingdom to tp to its home")
+                .on(KingdomHomeNotSetException.class, "Kingdom's home location has not been set")
+                .run();
+        return Command.SINGLE_SUCCESS;
+    }
+}
