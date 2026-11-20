@@ -8,7 +8,7 @@ import dev.jagritthukral.kingdomcome.database.repository.MemberRepository;
 import dev.jagritthukral.kingdomcome.exception.KingdomHomeNotSetException;
 import dev.jagritthukral.kingdomcome.exception.KingdomNotFoundException;
 import dev.jagritthukral.kingdomcome.exception.MissingKingdomMembershipException;
-import dev.jagritthukral.kingdomcome.models.KingdomHome;
+import dev.jagritthukral.kingdomcome.exception.WorldNotLoadedException;
 import dev.jagritthukral.kingdomcome.models.KingdomMember;
 import dev.jagritthukral.kingdomcome.utils.CommandAsyncUtils;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -30,8 +30,7 @@ public class KingdomTpHomeCommand {
     }
 
     public LiteralArgumentBuilder<CommandSourceStack> createCommand() {
-        return Commands.literal("tp_home")
-                .executes(this::tpToKingdomHome);
+        return Commands.literal("tp_home").executes(this::tpToKingdomHome);
     }
 
     private int tpToKingdomHome(CommandContext<CommandSourceStack> context) {
@@ -43,19 +42,17 @@ public class KingdomTpHomeCommand {
         }
         String executorPlayerUuid = executorPlayer.getUniqueId().toString();
 
-        CompletableFuture<KingdomHome> future = memberRepository.getKingdomMember(executorPlayerUuid)
-                .thenCompose(optionalKingdomMember -> {
-                    KingdomMember kingdomMember = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
-                    int kingdomId = kingdomMember.kingdomId();
-                    return kingdomRepository.getKingdomHome(kingdomId);
-                });
+        CompletableFuture<Boolean> future = memberRepository.getKingdomMember(executorPlayerUuid).thenCompose(optionalKingdomMember -> {
+            KingdomMember kingdomMember = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
+            int kingdomId = kingdomMember.kingdomId();
+            return kingdomRepository.getKingdomHome(kingdomId).thenCompose(home -> executorPlayer.teleportAsync(home.getBukkitLocation()));
+        });
+
         CommandAsyncUtils.handle(plugin, executorPlayer, future)
                 // todo: check if the completableFuture is handled because for proper error logging, have to unwrap from completableFuture
-                .onSuccess(home -> executorPlayer.teleportAsync(home.getBukkitLocation()))
-                .on(KingdomNotFoundException.class, "An issue while getting your kingdom occurred")
-                .on(MissingKingdomMembershipException.class, "You need to be member of a kingdom to tp to its home")
-                .on(KingdomHomeNotSetException.class, "Kingdom's home location has not been set")
-                .run();
+                .onSuccess(success -> {
+                    if (!success) executorPlayer.sendMessage("Teleport was cancelled or failed");
+                }).on(KingdomNotFoundException.class, "An issue while getting your kingdom occurred").on(MissingKingdomMembershipException.class, "You need to be member of a kingdom to tp to its home").on(KingdomHomeNotSetException.class, "Kingdom's home location has not been set").on(WorldNotLoadedException.class, "Failed to teleport because the world is not loaded or doesn't exist").run();
         return Command.SINGLE_SUCCESS;
     }
 }
