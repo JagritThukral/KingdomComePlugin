@@ -24,16 +24,16 @@ public class ClaimRepository {
         this.asyncExecutor = db.getAsyncExecutor();
     }
 
-    public CompletableFuture<Optional<Claim>> getClaim(int chunkX, int chunkZ, String worldUuid) {
+    public CompletableFuture<Optional<Claim>> getClaim(int chunkX, int chunkZ, UUID worldUuid) {
         return CompletableFuture.supplyAsync(() -> {
             String getClaimByChunkCordsSql = "SELECT kingdom_id FROM Claims WHERE chunk_x = ? AND chunk_z = ? AND world_uuid = ?;";
             try (Connection connection = db.getConnection(); PreparedStatement getClaimStmt = connection.prepareStatement(getClaimByChunkCordsSql)) {
                 getClaimStmt.setInt(1, chunkX);
                 getClaimStmt.setInt(2, chunkZ);
-                getClaimStmt.setString(3, worldUuid);
+                getClaimStmt.setString(3, worldUuid.toString());
                 try (ResultSet result = getClaimStmt.executeQuery()) {
                     if (result.next()) {
-                        return Optional.of(new Claim(result.getInt("kingdom_id"), chunkX, chunkZ, UUID.fromString(result.getString("world_uuid"))));
+                        return Optional.of(new Claim(result.getInt("kingdom_id"), chunkX, chunkZ, worldUuid));
                     }
                     return Optional.empty();
                 }
