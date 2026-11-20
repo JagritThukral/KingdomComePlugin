@@ -45,6 +45,7 @@ public class KingdomUnclaimCommand {
             return 0;
         }
         Chunk chunk = player.getChunk();
+        String worldUuidString = chunk.getWorld().getUID().toString();
         String uuid = player.getUniqueId().toString();
         int chunkX = chunk.getX(), chunkZ = chunk.getZ();
         CompletableFuture<ClaimStatus> future = memberRepository.getKingdomMember(uuid)
@@ -52,7 +53,7 @@ public class KingdomUnclaimCommand {
                     KingdomMember member = optionalClaim.orElseThrow(MissingKingdomMembershipException::new);
                     if (!member.role().canClaimOrUnclaimChunks())
                         throw new MissingKingdomPermissionException(UNCLAIM_CHUNK);
-                    return claimRepository.unclaimChunk(member.kingdomId(), chunkX, chunkZ);
+                    return claimRepository.unclaimChunk(member.kingdomId(), chunkX, chunkZ, worldUuidString);
                 });
 
 

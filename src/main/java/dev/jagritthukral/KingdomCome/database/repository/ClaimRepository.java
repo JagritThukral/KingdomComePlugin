@@ -65,7 +65,7 @@ public class ClaimRepository {
 
     public CompletableFuture<ClaimStatus> claimChunk(int claimKingdomId, int chunkX, int chunkZ, String worldUuid) {
         return CompletableFuture.supplyAsync(() -> {
-            String getKingdomIdOfClaimSql = "SELECT kingdom_id FROM Claims WHERE chunk_x = ? AND chunk_z = ?;";
+            String getKingdomIdOfClaimSql = "SELECT kingdom_id FROM Claims WHERE chunk_x = ? AND chunk_z = ? AND world_uuid = ?;";
             String insertClaimSql = "INSERT INTO Claims (kingdom_id, chunk_x, chunk_z,world_uuid) VALUES (?, ?, ?, ?);";
 
             try (Connection connection = db.getConnection()) {
@@ -73,6 +73,7 @@ public class ClaimRepository {
                 try (PreparedStatement getKingdomIdOfClaimStmt = connection.prepareStatement(getKingdomIdOfClaimSql)) {
                     getKingdomIdOfClaimStmt.setInt(1, chunkX);
                     getKingdomIdOfClaimStmt.setInt(2, chunkZ);
+                    getKingdomIdOfClaimStmt.setString(3, worldUuid);
                     try (ResultSet claimSet = getKingdomIdOfClaimStmt.executeQuery()) {
                         if (claimSet.next()) {
                             int existingClaimKingdomId = claimSet.getInt("kingdom_id");
@@ -106,15 +107,16 @@ public class ClaimRepository {
 
     }
 
-    public CompletableFuture<ClaimStatus> unclaimChunk(int unclaimKingdomId, int chunkX, int chunkZ) {
+    public CompletableFuture<ClaimStatus> unclaimChunk(int unclaimKingdomId, int chunkX, int chunkZ, String worlduuid) {
         return CompletableFuture.supplyAsync(() -> {
-            String getKingdomIdOfClaimSql = "SELECT kingdom_id FROM Claims WHERE chunk_x = ? AND chunk_z = ?;";
-            String deleteClaimSql = "DELETE FROM Claims WHERE chunk_x = ? AND chunk_z = ?;";
+            String getKingdomIdOfClaimSql = "SELECT kingdom_id FROM Claims WHERE chunk_x = ? AND chunk_z = ? AND world_uuid = ?;";
+            String deleteClaimSql = "DELETE FROM Claims WHERE chunk_x = ? AND chunk_z = ? AND world_uuid = ?;";
             try (Connection connection = db.getConnection()) {
                 // check who owns the chunk
                 try (PreparedStatement getKingdomIdOfClaimStmt = connection.prepareStatement(getKingdomIdOfClaimSql)) {
                     getKingdomIdOfClaimStmt.setInt(1, chunkX);
                     getKingdomIdOfClaimStmt.setInt(2, chunkZ);
+                    getKingdomIdOfClaimStmt.setString(3, worlduuid);
                     try (ResultSet kindomIdResultSet = getKingdomIdOfClaimStmt.executeQuery()) {
                         if (kindomIdResultSet.next()) {
                             int existingClaimKingdomId = kindomIdResultSet.getInt("kingdom_id");
@@ -132,6 +134,7 @@ public class ClaimRepository {
                 try (PreparedStatement deleteClaimStmt = connection.prepareStatement(deleteClaimSql)) {
                     deleteClaimStmt.setInt(1, chunkX);
                     deleteClaimStmt.setInt(2, chunkZ);
+                    deleteClaimStmt.setString(3, worlduuid);
                     int rowsChanged = deleteClaimStmt.executeUpdate();
                     if (rowsChanged == 0) {
                         throw new ChunkNotClaimedException();
