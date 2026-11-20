@@ -19,7 +19,8 @@ public class KingdomDeclareWarCommand {
 
     public LiteralArgumentBuilder<CommandSourceStack> createCommand() {
         return Commands.literal("declarewar")
-                .then(Commands.argument("KingdomName", StringArgumentType.string()).executes(this::declareWar)
+                .then(Commands.argument("KingdomName", StringArgumentType.string())
+                        .executes(this::declareWar)
                 );
     }
 

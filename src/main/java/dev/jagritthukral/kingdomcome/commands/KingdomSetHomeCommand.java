@@ -7,9 +7,6 @@ import dev.jagritthukral.kingdomcome.database.repository.KingdomRepository;
 import dev.jagritthukral.kingdomcome.database.repository.MemberRepository;
 import dev.jagritthukral.kingdomcome.exception.MissingKingdomMembershipException;
 import dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException;
-
-import static dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException.MissingPermission.*;
-
 import dev.jagritthukral.kingdomcome.models.KingdomHome;
 import dev.jagritthukral.kingdomcome.models.KingdomMember;
 import dev.jagritthukral.kingdomcome.utils.CommandAsyncUtils;
@@ -20,6 +17,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.concurrent.CompletableFuture;
+
+import static dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException.MissingPermission.SET_HOME;
 
 public class KingdomSetHomeCommand {
     private final JavaPlugin plugin;
@@ -41,17 +40,21 @@ public class KingdomSetHomeCommand {
         CommandSourceStack source = context.getSource();
 
         if (!(source.getExecutor() instanceof Player executorPlayer)) {
-            source.getSender().sendMessage("Only players can set kingdom's home location");
+            source.getSender()
+                    .sendMessage("Only players can set kingdom's home location");
             return 0;
         }
 
-        String executorPlayerUuid = executorPlayer.getUniqueId().toString();
+        String executorPlayerUuid = executorPlayer.getUniqueId()
+                .toString();
         Location location = executorPlayer.getLocation();
-        CompletableFuture<Void> future = memberRepository.getKingdomMember(executorPlayerUuid).thenCompose(optionalKingdomMember -> {
-            KingdomMember kingdomMember = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
-            if (!kingdomMember.role().canSetHome()) throw new MissingKingdomPermissionException(SET_HOME);
-            return kingdomRepository.setKingdomHome(kingdomMember.kingdomId(), new KingdomHome(location));
-        });
+        CompletableFuture<Void> future = memberRepository.getKingdomMember(executorPlayerUuid)
+                .thenCompose(optionalKingdomMember -> {
+                    KingdomMember kingdomMember = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
+                    if (!kingdomMember.role()
+                            .canSetHome()) throw new MissingKingdomPermissionException(SET_HOME);
+                    return kingdomRepository.setKingdomHome(kingdomMember.kingdomId(), new KingdomHome(location));
+                });
         CommandAsyncUtils.handle(plugin, executorPlayer, future)
                 .onSuccess(_ -> executorPlayer.sendMessage("set home for your kingdom successfully"))
                 .on(MissingKingdomMembershipException.class, "You need to be member of a kingdom to set home for the kingdom")

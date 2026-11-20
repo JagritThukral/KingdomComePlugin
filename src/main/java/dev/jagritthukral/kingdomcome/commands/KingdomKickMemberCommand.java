@@ -41,13 +41,17 @@ public class KingdomKickMemberCommand {
         CommandSourceStack source = context.getSource();
 
         if (!(source.getExecutor() instanceof Player executorPlayer)) {
-            source.getSender().sendMessage("Only players can kick members from a kingdom");
+            source.getSender()
+                    .sendMessage("Only players can kick members from a kingdom");
             return 0;
         }
-        String executorPlayerUuid = executorPlayer.getUniqueId().toString();
+        String executorPlayerUuid = executorPlayer.getUniqueId()
+                .toString();
         PlayerSelectorArgumentResolver resolver = context.getArgument("PlayerName", PlayerSelectorArgumentResolver.class);
-        Player targetPlayer = resolver.resolve(context.getSource()).getFirst();
-        String targetPlayerUuid = targetPlayer.getUniqueId().toString();
+        Player targetPlayer = resolver.resolve(context.getSource())
+                .getFirst();
+        String targetPlayerUuid = targetPlayer.getUniqueId()
+                .toString();
 
         if (Objects.equals(targetPlayerUuid, executorPlayerUuid)) {
             executorPlayer.sendMessage("You can't kick yourself");
@@ -55,7 +59,8 @@ public class KingdomKickMemberCommand {
         CompletableFuture<Void> future = memberRepository.getKingdomMember(executorPlayerUuid)
                 .thenCompose(optionalKingdomMember -> {
                     KingdomMember executorKingdomMember = optionalKingdomMember.orElseThrow(() -> new MissingKingdomMembershipException("You need to member of kingdom to kick members"));
-                    if (!executorKingdomMember.role().canAddOrKickMembers())
+                    if (!executorKingdomMember.role()
+                            .canAddOrKickMembers())
                         throw new MissingKingdomPermissionException(KICK_MEMBER);
                     return memberRepository.kickKingdomMember(targetPlayerUuid, executorKingdomMember.kingdomId());
                 });

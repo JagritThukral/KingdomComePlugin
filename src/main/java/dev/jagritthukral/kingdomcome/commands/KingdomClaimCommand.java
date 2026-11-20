@@ -35,13 +35,15 @@ public class KingdomClaimCommand {
         CommandSourceStack source = context.getSource();
 
         if (!(source.getExecutor() instanceof Player player)) {
-            source.getSender().sendMessage("Only players can claim lands");
+            source.getSender()
+                    .sendMessage("Only players can claim lands");
             return 0;
         }
         Chunk chunk = player.getChunk();
         UUID playerUuid = player.getUniqueId();
         int chunkX = chunk.getX(), chunkZ = chunk.getZ();
-        UUID worldUuid = chunk.getWorld().getUID();
+        UUID worldUuid = chunk.getWorld()
+                .getUID();
         CompletableFuture<ClaimStatus> future = claimService.claimChunk(playerUuid, chunkX, chunkZ, worldUuid);
 
 

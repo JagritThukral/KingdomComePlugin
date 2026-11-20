@@ -14,7 +14,8 @@ public record KingdomHome(UUID world_uuid, double x, double y, double z) {
         }
         // calling canonical constructor
         this(
-                location.getWorld().getUID(),
+                location.getWorld()
+                        .getUID(),
                 location.getX(),
                 location.getY(),
                 location.getZ()

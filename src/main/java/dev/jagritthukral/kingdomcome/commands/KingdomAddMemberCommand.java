@@ -41,17 +41,22 @@ public class KingdomAddMemberCommand {
         CommandSourceStack source = context.getSource();
 
         if (!(source.getExecutor() instanceof Player executorPlayer)) {
-            source.getSender().sendMessage("Only players can add other players to their kingdom");
+            source.getSender()
+                    .sendMessage("Only players can add other players to their kingdom");
             return 0;
         }
-        String executorUuid = executorPlayer.getUniqueId().toString();
+        String executorUuid = executorPlayer.getUniqueId()
+                .toString();
         PlayerSelectorArgumentResolver resolver = context.getArgument("PlayerName", PlayerSelectorArgumentResolver.class);
-        Player targetPlayer = resolver.resolve(context.getSource()).getFirst();
-        String targetPlayerUuid = targetPlayer.getUniqueId().toString();
+        Player targetPlayer = resolver.resolve(context.getSource())
+                .getFirst();
+        String targetPlayerUuid = targetPlayer.getUniqueId()
+                .toString();
         CompletableFuture<Void> future = memberRepository.getKingdomMember(executorUuid)
                 .thenCompose(optionalKingdomMember -> {
                             KingdomMember kingdomMember = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
-                            if (!kingdomMember.role().canAddOrKickMembers())
+                            if (!kingdomMember.role()
+                                    .canAddOrKickMembers())
                                 throw new MissingKingdomPermissionException(ADD_MEMBER);
                             return memberRepository.addKingdomMember(kingdomMember.kingdomId(), targetPlayerUuid);
                         }

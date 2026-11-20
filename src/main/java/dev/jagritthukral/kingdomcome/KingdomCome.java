@@ -37,10 +37,13 @@ public class KingdomCome extends JavaPlugin implements Listener {
                 .stream()
                 .map(WorldInfo::getUID)
                 .toList();
-        ArrayList<Claim> claimsList = claimRepository.getAllClaims().join();
+        ArrayList<Claim> claimsList = claimRepository.getAllClaims()
+                .join();
         ClaimService claimService = new ClaimService(worldUuidList, claimsList, memberRepository, claimRepository);
         // register events
-        this.getServer().getPluginManager().registerEvents(this, this);
+        this.getServer()
+                .getPluginManager()
+                .registerEvents(this, this);
 
         // register commands
         LiteralArgumentBuilder<CommandSourceStack> rootCommand = Commands.literal("k");
@@ -55,10 +58,13 @@ public class KingdomCome extends JavaPlugin implements Listener {
         rootCommand.then(new KingdomDeclareWarCommand(db, this).createCommand());
         rootCommand.then(new KingdomCancelWarCommand(db, this).createCommand());
         LiteralArgumentBuilder<CommandSourceStack> rootChatCommand = Commands.literal("kc");
-        this.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
-            event.registrar().register(rootCommand.build());
-            event.registrar().register(rootChatCommand.build());
-        });
+        this.getLifecycleManager()
+                .registerEventHandler(LifecycleEvents.COMMANDS, event -> {
+                    event.registrar()
+                            .register(rootCommand.build());
+                    event.registrar()
+                            .register(rootChatCommand.build());
+                });
     }
 
     @Override

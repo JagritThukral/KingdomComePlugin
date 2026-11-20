@@ -35,11 +35,13 @@ public class KingdomUnclaimCommand {
         CommandSourceStack source = context.getSource();
 
         if (!(source.getExecutor() instanceof Player player)) {
-            source.getSender().sendMessage("Only players can unclaim lands");
+            source.getSender()
+                    .sendMessage("Only players can unclaim lands");
             return 0;
         }
         Chunk chunk = player.getChunk();
-        UUID worldUuid = chunk.getWorld().getUID();
+        UUID worldUuid = chunk.getWorld()
+                .getUID();
         UUID playerUuid = player.getUniqueId();
         int chunkX = chunk.getX(), chunkZ = chunk.getZ();
         CompletableFuture<ClaimStatus> future = claimService.unclaimChunk(playerUuid, chunkX, chunkZ, worldUuid);

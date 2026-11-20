@@ -66,7 +66,8 @@ public class KingdomRepository {
 
             String insertKingdomSql = "INSERT INTO Kingdoms (name, leader_uuid,created_at) VALUES (?, ?, ?);";
             String insertPlayerSql = "INSERT INTO Players (kingdom_id, player_uuid, role) VALUES (?, ?, ?);";
-            long createdAt = Instant.now().getEpochSecond();
+            long createdAt = Instant.now()
+                    .getEpochSecond();
             try (Connection connection = db.getConnection()) {
                 connection.setAutoCommit(false);
                 try (PreparedStatement kingdomStmt = connection.prepareStatement(insertKingdomSql, Statement.RETURN_GENERATED_KEYS); PreparedStatement playerStmt = connection.prepareStatement(insertPlayerSql)) {
@@ -161,7 +162,8 @@ public class KingdomRepository {
         return CompletableFuture.runAsync(() -> {
             String addHomeSql = "UPDATE Kingdoms SET home_world_uuid = ?,home_x = ?,home_y = ?,home_z = ? WHERE kingdom_id = ?;";
             try (Connection connection = db.getConnection(); PreparedStatement addHomeStmt = connection.prepareStatement(addHomeSql)) {
-                addHomeStmt.setString(1, home.world_uuid().toString());
+                addHomeStmt.setString(1, home.world_uuid()
+                        .toString());
                 addHomeStmt.setDouble(2, home.x());
                 addHomeStmt.setDouble(3, home.y());
                 addHomeStmt.setDouble(4, home.z());

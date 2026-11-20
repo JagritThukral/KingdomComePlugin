@@ -76,7 +76,8 @@ public class ClaimService {
         return memberRepository.getKingdomMember(playerUuid.toString())
                 .thenCompose(optionalKingdomMember -> {
                     KingdomMember member = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
-                    if (!member.role().canClaimOrUnclaimChunks())
+                    if (!member.role()
+                            .canClaimOrUnclaimChunks())
                         throw new MissingKingdomPermissionException(CLAIM_CHUNK);
                     return claimRepository.claimChunk(member.kingdomId(), chunkX, chunkZ, worldUuid)
                             .thenApply((status) -> {
@@ -94,7 +95,8 @@ public class ClaimService {
         return memberRepository.getKingdomMember(playerUuid.toString())
                 .thenCompose(optionalClaim -> {
                     KingdomMember member = optionalClaim.orElseThrow(MissingKingdomMembershipException::new);
-                    if (!member.role().canClaimOrUnclaimChunks())
+                    if (!member.role()
+                            .canClaimOrUnclaimChunks())
                         throw new MissingKingdomPermissionException(UNCLAIM_CHUNK);
                     return claimRepository.unclaimChunk(member.kingdomId(), chunkX, chunkZ, worldUuid)
                             .thenApply(status -> {

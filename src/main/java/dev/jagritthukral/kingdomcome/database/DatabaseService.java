@@ -26,7 +26,8 @@ public class DatabaseService {
     }
 
     private void initDatabase() {
-        plugin.getSLF4JLogger().debug("Initializing Database");
+        plugin.getSLF4JLogger()
+                .debug("Initializing Database");
         HikariConfig config = createConfig();
         this.dataSource = new HikariDataSource(config);
 
@@ -73,7 +74,7 @@ public class DatabaseService {
                         ON DELETE CASCADE
                     )
                     """);
-
+            // todo: add indexes
             statement.executeBatch();
         } catch (SQLException e) {
             throw new RuntimeException("Failed to execute DDL database initialization", e);
@@ -82,14 +83,18 @@ public class DatabaseService {
 
 
     private @NonNull HikariConfig createConfig() {
-        plugin.getSLF4JLogger().debug("Configuring HikariCP for SQLite");
+        plugin.getSLF4JLogger()
+                .debug("Configuring HikariCP for SQLite");
         HikariConfig config = new HikariConfig();
 
         // Ensure database directory exists
         File dbFile = new File(plugin.getDataFolder(), "KingdomCome.db");
-        if (!plugin.getDataFolder().exists()) {
-            boolean dirsCreated = plugin.getDataFolder().mkdirs();
-            if (dirsCreated) plugin.getSLF4JLogger().debug("created plugin dir");
+        if (!plugin.getDataFolder()
+                .exists()) {
+            boolean dirsCreated = plugin.getDataFolder()
+                    .mkdirs();
+            if (dirsCreated) plugin.getSLF4JLogger()
+                    .debug("created plugin dir");
         }
 
         config.setDriverClassName("org.sqlite.JDBC");
@@ -129,7 +134,8 @@ public class DatabaseService {
         if (didTimeout) {
             List<Runnable> failedTaskList = asyncExecutor.shutdownNow();
             // to think: should I try to force run the tasks on current thread?
-            plugin.getSLF4JLogger().error("Failed to complete pending db tasks (count: {})", failedTaskList.size());
+            plugin.getSLF4JLogger()
+                    .error("Failed to complete pending db tasks (count: {})", failedTaskList.size());
         }
         if (dataSource != null && !dataSource.isClosed()) {
             dataSource.close();

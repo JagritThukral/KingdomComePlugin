@@ -26,7 +26,9 @@ public class KingdomCreateCommand {
 
     public LiteralArgumentBuilder<CommandSourceStack> createCommand() {
         return Commands.literal("create")
-                .requires(source -> source.getSender().isOp() || source.getSender().hasPermission("kingdomcome.create"))
+                .requires(source -> source.getSender()
+                        .isOp() || source.getSender()
+                        .hasPermission("kingdomcome.create"))
                 .then(Commands.argument("KingdomName", StringArgumentType.string())
                         .then(Commands.argument("leader_player", ArgumentTypes.player())
                                 .executes(context -> createKingdom(context, StringArgumentType.getString(context, "KingdomName"))))
@@ -36,9 +38,12 @@ public class KingdomCreateCommand {
 
     private int createKingdom(CommandContext<CommandSourceStack> context, String kingdomName) throws CommandSyntaxException {
         PlayerSelectorArgumentResolver resolver = context.getArgument("leader_player", PlayerSelectorArgumentResolver.class);
-        Player executorPlayer = context.getSource().getPlayerOrThrow();
-        Player leaderPlayer = resolver.resolve(context.getSource()).getFirst();
-        String leaderPlayerUuid = leaderPlayer.getUniqueId().toString();
+        Player executorPlayer = context.getSource()
+                .getPlayerOrThrow();
+        Player leaderPlayer = resolver.resolve(context.getSource())
+                .getFirst();
+        String leaderPlayerUuid = leaderPlayer.getUniqueId()
+                .toString();
         CommandAsyncUtils.handle(plugin, executorPlayer, kingdomRepository.createKingdomWithLeader(kingdomName, leaderPlayerUuid))
                 .onSuccess(_ -> executorPlayer.sendMessage("Kingdom '" + kingdomName + "' created successfully!"))
                 .on(DuplicateKingdomException.class, "That kingdom name is already taken!")

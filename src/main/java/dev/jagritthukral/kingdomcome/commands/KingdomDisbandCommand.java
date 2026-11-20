@@ -37,25 +37,30 @@ public class KingdomDisbandCommand {
         CommandSourceStack source = context.getSource();
         try {
             Player player = source.getPlayerOrThrow();
-            boolean isOp = source.getSender().isOp();
+            boolean isOp = source.getSender()
+                    .isOp();
 
 
-            CommandAsyncUtils.handle(plugin, player, kingdomRepository.findKingdomByName(name).thenCompose(kingdomOptional -> {
-                        Kingdom kingdom = kingdomOptional.orElseThrow(() -> new KingdomNotFoundException(name));
-                        if (!isOp && !Objects.equals(kingdom.leaderUuid(), player.getUniqueId().toString())) {
-                            throw new MissingKingdomOwnershipException();
-                        }
-                        return kingdomRepository.disbandKingdom(name);
+            CommandAsyncUtils.handle(plugin, player, kingdomRepository.findKingdomByName(name)
+                            .thenCompose(kingdomOptional -> {
+                                Kingdom kingdom = kingdomOptional.orElseThrow(() -> new KingdomNotFoundException(name));
+                                if (!isOp && !Objects.equals(kingdom.leaderUuid(), player.getUniqueId()
+                                        .toString())) {
+                                    throw new MissingKingdomOwnershipException();
+                                }
+                                return kingdomRepository.disbandKingdom(name);
 
-                    }))
+                            }))
                     .onSuccess(_ -> player.sendMessage("Disbanded Kingdom " + name))
                     .on(KingdomNotFoundException.class, "No kingdom named '" + name + "' was found.")
                     .on(MissingKingdomOwnershipException.class, "You are not the leader of this kingdom.\nOnly a leader can disband a kingdom.")
                     .run();
             return Command.SINGLE_SUCCESS;
         } catch (Exception e) {
-            source.getSender().sendMessage("An internal error occurred while running this command.");
-            plugin.getSLF4JLogger().error(e.toString());
+            source.getSender()
+                    .sendMessage("An internal error occurred while running this command.");
+            plugin.getSLF4JLogger()
+                    .error(e.toString());
             return 0;
         }
     }

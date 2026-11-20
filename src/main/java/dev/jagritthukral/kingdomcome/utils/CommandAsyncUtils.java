@@ -64,21 +64,25 @@ public final class CommandAsyncUtils {
         public void run() {
             future.whenComplete((result, throwable) ->
                     // Runs on the player's region thread (Folia-safe). The last arg runs if the player was removed.
-                    player.getScheduler().run(plugin, _ -> {
-                        if (throwable == null) {
-                            onSuccess.accept(result);
-                            return;
-                        }
-                        Throwable cause = unwrap(throwable);
-                        for (var entry : handlers.entrySet()) {
-                            if (entry.getKey().isInstance(cause)) { // isInstance also matches subclasses
-                                entry.getValue().accept(cause);
-                                return;
-                            }
-                        }
-                        player.sendMessage("An internal error occurred. Check server console logs for info.");
-                        plugin.getSLF4JLogger().error("Async operation failed for {}", player.getName(), cause);
-                    }, null)
+                    player.getScheduler()
+                            .run(plugin, _ -> {
+                                if (throwable == null) {
+                                    onSuccess.accept(result);
+                                    return;
+                                }
+                                Throwable cause = unwrap(throwable);
+                                for (var entry : handlers.entrySet()) {
+                                    if (entry.getKey()
+                                            .isInstance(cause)) { // isInstance also matches subclasses
+                                        entry.getValue()
+                                                .accept(cause);
+                                        return;
+                                    }
+                                }
+                                player.sendMessage("An internal error occurred. Check server console logs for info.");
+                                plugin.getSLF4JLogger()
+                                        .error("Async operation failed for {}", player.getName(), cause);
+                            }, null)
             );
         }
     }
