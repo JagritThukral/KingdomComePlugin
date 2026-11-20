@@ -78,7 +78,7 @@ public class ClaimService {
                     KingdomMember member = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
                     if (!member.role().canClaimOrUnclaimChunks())
                         throw new MissingKingdomPermissionException(CLAIM_CHUNK);
-                    return claimRepository.claimChunk(member.kingdomId(), chunkX, chunkZ, worldUuid.toString())
+                    return claimRepository.claimChunk(member.kingdomId(), chunkX, chunkZ, worldUuid)
                             .thenApply((status) -> {
                                 // only add to cache if db succeeded
                                 if (status == ClaimStatus.CLAIMED) {
@@ -96,7 +96,7 @@ public class ClaimService {
                     KingdomMember member = optionalClaim.orElseThrow(MissingKingdomMembershipException::new);
                     if (!member.role().canClaimOrUnclaimChunks())
                         throw new MissingKingdomPermissionException(UNCLAIM_CHUNK);
-                    return claimRepository.unclaimChunk(member.kingdomId(), chunkX, chunkZ, worldUuid.toString())
+                    return claimRepository.unclaimChunk(member.kingdomId(), chunkX, chunkZ, worldUuid)
                             .thenApply(status -> {
                                 if (status == ClaimStatus.UNCLAIMED) {
                                     removeClaimFromCache(worldUuid, chunkX, chunkZ);
