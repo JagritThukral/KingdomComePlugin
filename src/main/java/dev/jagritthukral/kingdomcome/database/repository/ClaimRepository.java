@@ -63,7 +63,7 @@ public class ClaimRepository {
         }, asyncExecutor);
     }
 
-    public CompletableFuture<ClaimStatus> claimChunk(int claimKingdomId, int chunkX, int chunkZ, String worldUuid) {
+    public CompletableFuture<ClaimStatus> claimChunk(int claimKingdomId, int chunkX, int chunkZ, UUID worldUuid) {
         return CompletableFuture.supplyAsync(() -> {
             String getKingdomIdOfClaimSql = "SELECT kingdom_id FROM Claims WHERE chunk_x = ? AND chunk_z = ? AND world_uuid = ?;";
             String insertClaimSql = "INSERT INTO Claims (kingdom_id, chunk_x, chunk_z,world_uuid) VALUES (?, ?, ?, ?);";
@@ -73,7 +73,7 @@ public class ClaimRepository {
                 try (PreparedStatement getKingdomIdOfClaimStmt = connection.prepareStatement(getKingdomIdOfClaimSql)) {
                     getKingdomIdOfClaimStmt.setInt(1, chunkX);
                     getKingdomIdOfClaimStmt.setInt(2, chunkZ);
-                    getKingdomIdOfClaimStmt.setString(3, worldUuid);
+                    getKingdomIdOfClaimStmt.setString(3, worldUuid.toString());
                     try (ResultSet claimSet = getKingdomIdOfClaimStmt.executeQuery()) {
                         if (claimSet.next()) {
                             int existingClaimKingdomId = claimSet.getInt("kingdom_id");
@@ -94,7 +94,7 @@ public class ClaimRepository {
                     insertClaimStmt.setInt(1, claimKingdomId);
                     insertClaimStmt.setInt(2, chunkX);
                     insertClaimStmt.setInt(3, chunkZ);
-                    insertClaimStmt.setString(4, worldUuid);
+                    insertClaimStmt.setString(4, worldUuid.toString());
                     insertClaimStmt.executeUpdate();
 
                     return ClaimStatus.CLAIMED;
@@ -107,7 +107,7 @@ public class ClaimRepository {
 
     }
 
-    public CompletableFuture<ClaimStatus> unclaimChunk(int unclaimKingdomId, int chunkX, int chunkZ, String worlduuid) {
+    public CompletableFuture<ClaimStatus> unclaimChunk(int unclaimKingdomId, int chunkX, int chunkZ, UUID worldUuid) {
         return CompletableFuture.supplyAsync(() -> {
             String getKingdomIdOfClaimSql = "SELECT kingdom_id FROM Claims WHERE chunk_x = ? AND chunk_z = ? AND world_uuid = ?;";
             String deleteClaimSql = "DELETE FROM Claims WHERE chunk_x = ? AND chunk_z = ? AND world_uuid = ?;";
@@ -116,7 +116,7 @@ public class ClaimRepository {
                 try (PreparedStatement getKingdomIdOfClaimStmt = connection.prepareStatement(getKingdomIdOfClaimSql)) {
                     getKingdomIdOfClaimStmt.setInt(1, chunkX);
                     getKingdomIdOfClaimStmt.setInt(2, chunkZ);
-                    getKingdomIdOfClaimStmt.setString(3, worlduuid);
+                    getKingdomIdOfClaimStmt.setString(3, worldUuid.toString());
                     try (ResultSet kindomIdResultSet = getKingdomIdOfClaimStmt.executeQuery()) {
                         if (kindomIdResultSet.next()) {
                             int existingClaimKingdomId = kindomIdResultSet.getInt("kingdom_id");
@@ -134,7 +134,7 @@ public class ClaimRepository {
                 try (PreparedStatement deleteClaimStmt = connection.prepareStatement(deleteClaimSql)) {
                     deleteClaimStmt.setInt(1, chunkX);
                     deleteClaimStmt.setInt(2, chunkZ);
-                    deleteClaimStmt.setString(3, worlduuid);
+                    deleteClaimStmt.setString(3, worldUuid.toString());
                     int rowsChanged = deleteClaimStmt.executeUpdate();
                     if (rowsChanged == 0) {
                         throw new ChunkNotClaimedException();
