@@ -6,6 +6,8 @@ import dev.jagritthukral.kingdomcome.database.DatabaseService;
 import dev.jagritthukral.kingdomcome.database.repository.ClaimRepository;
 import dev.jagritthukral.kingdomcome.database.repository.KingdomRepository;
 import dev.jagritthukral.kingdomcome.database.repository.MemberRepository;
+import dev.jagritthukral.kingdomcome.models.Claim;
+import dev.jagritthukral.kingdomcome.service.ClaimService;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
@@ -13,6 +15,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class KingdomCome extends JavaPlugin implements Listener {
@@ -32,6 +35,8 @@ public class KingdomCome extends JavaPlugin implements Listener {
                 .stream()
                 .map(world -> world.getUID().toString())
                 .toList();
+        ArrayList<Claim> claimsList = claimRepository.getAllClaims().join();
+        ClaimService claimService = new ClaimService(worldUuidList, claimsList, memberRepository, claimRepository);
         // register events
         this.getServer().getPluginManager().registerEvents(this, this);
 
@@ -39,8 +44,8 @@ public class KingdomCome extends JavaPlugin implements Listener {
         LiteralArgumentBuilder<CommandSourceStack> rootCommand = Commands.literal("k");
         rootCommand.then(new KingdomCreateCommand(this, kingdomRepository).createCommand());
         rootCommand.then(new KingdomDisbandCommand(this, kingdomRepository).createCommand());
-        rootCommand.then(new KingdomClaimCommand(this, memberRepository, claimRepository).createCommand());
-        rootCommand.then(new KingdomUnclaimCommand(this, memberRepository, claimRepository).createCommand());
+        rootCommand.then(new KingdomClaimCommand(this, claimService).createCommand());
+        rootCommand.then(new KingdomUnclaimCommand(this, claimService).createCommand());
         rootCommand.then(new KingdomAddMemberCommand(this, memberRepository).createCommand());
         rootCommand.then(new KingdomKickMemberCommand(this, memberRepository).createCommand());
         rootCommand.then(new KingdomSetHomeCommand(this, memberRepository, kingdomRepository).createCommand());
@@ -66,7 +71,4 @@ public class KingdomCome extends JavaPlugin implements Listener {
         }
     }
 
-    public DatabaseService getDb() {
-        return db;
-    }
 }

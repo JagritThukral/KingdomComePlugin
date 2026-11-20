@@ -3,15 +3,10 @@ package dev.jagritthukral.kingdomcome.commands;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import dev.jagritthukral.kingdomcome.database.repository.ClaimRepository;
-import dev.jagritthukral.kingdomcome.database.repository.MemberRepository;
-
-import static dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException.MissingPermission.*;
-
 import dev.jagritthukral.kingdomcome.exception.MissingKingdomMembershipException;
 import dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException;
 import dev.jagritthukral.kingdomcome.models.ClaimStatus;
-import dev.jagritthukral.kingdomcome.models.KingdomMember;
+import dev.jagritthukral.kingdomcome.service.ClaimService;
 import dev.jagritthukral.kingdomcome.utils.CommandAsyncUtils;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -19,17 +14,16 @@ import org.bukkit.Chunk;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public class KingdomClaimCommand {
     private final JavaPlugin plugin;
-    private final MemberRepository memberRepository;
-    private final ClaimRepository claimRepository;
+    private final ClaimService claimService;
 
-    public KingdomClaimCommand(JavaPlugin plugin, MemberRepository memberRepository, ClaimRepository claimRepository) {
+    public KingdomClaimCommand(JavaPlugin plugin, ClaimService claimService) {
         this.plugin = plugin;
-        this.memberRepository = memberRepository;
-        this.claimRepository = claimRepository;
+        this.claimService = claimService;
     }
 
     public LiteralArgumentBuilder<CommandSourceStack> createCommand() {
@@ -45,16 +39,10 @@ public class KingdomClaimCommand {
             return 0;
         }
         Chunk chunk = player.getChunk();
-        String uuid = player.getUniqueId().toString();
+        UUID playerUuid = player.getUniqueId();
         int chunkX = chunk.getX(), chunkZ = chunk.getZ();
-        String worldUuidString = chunk.getWorld().getUID().toString();
-        CompletableFuture<ClaimStatus> future = memberRepository.getKingdomMember(uuid)
-                .thenCompose(optionalKingdomMember -> {
-                    KingdomMember member = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
-                    if (!member.role().canClaimOrUnclaimChunks())
-                        throw new MissingKingdomPermissionException(CLAIM_CHUNK);
-                    return claimRepository.claimChunk(member.kingdomId(), chunkX, chunkZ, worldUuidString);
-                });
+        UUID worldUuid = chunk.getWorld().getUID();
+        CompletableFuture<ClaimStatus> future = claimService.claimChunk(playerUuid, chunkX, chunkZ, worldUuid);
 
 
         CommandAsyncUtils.handle(plugin, player, future)
