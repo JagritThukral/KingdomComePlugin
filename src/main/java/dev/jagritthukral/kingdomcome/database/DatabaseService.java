@@ -6,7 +6,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.NonNull;
 
 import java.io.File;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -14,8 +16,8 @@ import java.util.concurrent.TimeUnit;
 
 public class DatabaseService {
     private final JavaPlugin plugin;
-    private HikariDataSource dataSource;
     private final ExecutorService asyncExecutor;
+    private HikariDataSource dataSource;
 
     public DatabaseService(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -30,8 +32,7 @@ public class DatabaseService {
 
         try (Connection connection = getConnection();
              Statement statement = connection.createStatement()) {
-
-            statement.execute("""
+            statement.addBatch("""
                     CREATE TABLE IF NOT EXISTS Kingdoms(
                         kingdom_id INTEGER PRIMARY KEY AUTOINCREMENT,
                         name TEXT NOT NULL UNIQUE,
@@ -45,27 +46,35 @@ public class DatabaseService {
                             (home_world_uuid IS NULL AND home_x IS NULL AND home_y IS NULL AND home_z IS NULL) OR
                             (home_world_uuid IS NOT NULL AND home_x IS NOT NULL AND home_y IS NOT NULL AND home_z IS NOT NULL)
                         )
-                    );
+                    )
+                    """);
+
+            statement.addBatch("""
                     CREATE TABLE IF NOT EXISTS Players(
                         kingdom_id INTEGER NOT NULL,
                         player_uuid TEXT PRIMARY KEY,
-                        role TEXT CHECK ( role in ('LEADER','DUKE','MEMBER')) default 'MEMBER',
+                        role TEXT CHECK (role IN ('LEADER','DUKE','MEMBER')) DEFAULT 'MEMBER',
                         discord_id TEXT,
                         FOREIGN KEY (kingdom_id)
                         REFERENCES Kingdoms(kingdom_id)
                         ON DELETE CASCADE
-                    );
+                    )
+                    """);
+
+            statement.addBatch("""
                     CREATE TABLE IF NOT EXISTS Claims(
                         kingdom_id INTEGER NOT NULL,
                         chunk_x INTEGER NOT NULL,
                         chunk_z INTEGER NOT NULL,
                         world_uuid TEXT NOT NULL,
-                        PRIMARY KEY (chunk_x, chunk_z,world_uuid),
+                        PRIMARY KEY (chunk_x, chunk_z, world_uuid),
                         FOREIGN KEY (kingdom_id)
                         REFERENCES Kingdoms(kingdom_id)
                         ON DELETE CASCADE
-                      );
+                    )
                     """);
+
+            statement.executeBatch();
         } catch (SQLException e) {
             throw new RuntimeException("Failed to execute DDL database initialization", e);
         }
@@ -94,7 +103,8 @@ public class DatabaseService {
         config.setConnectionTimeout(10000);
         config.setPoolName("SQLiteHikariPool");
         config.addDataSourceProperty("foreign_keys", "true");
-        config.setConnectionInitSql("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;");
+        config.addDataSourceProperty("journal_mode", "WAL");
+        config.addDataSourceProperty("synchronous", "NORMAL");
         config.addDataSourceProperty("busy_timeout", "5000");
 
         return config;
