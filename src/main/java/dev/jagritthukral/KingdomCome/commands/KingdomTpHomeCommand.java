@@ -50,6 +50,8 @@ public class KingdomTpHomeCommand {
                     return kingdomRepository.getKingdomHome(kingdomId);
                 });
         CommandAsyncUtils.handle(plugin, executorPlayer, future)
+                // todo: check if the completableFuture is handled because for proper error logging, have to unwrap from completableFuture
+                .onSuccess(home -> executorPlayer.teleportAsync(home.getBukkitLocation()))
                 .on(KingdomNotFoundException.class, "An issue while getting your kingdom occurred")
                 .on(MissingKingdomMembershipException.class, "You need to be member of a kingdom to tp to its home")
                 .on(KingdomHomeNotSetException.class, "Kingdom's home location has not been set")
