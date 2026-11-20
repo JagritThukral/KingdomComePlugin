@@ -24,13 +24,13 @@ public class ClaimService {
     private final MemberRepository memberRepository;
     private final ClaimRepository claimRepository;
 
-    public ClaimService(List<String> worldsUuidList, ArrayList<Claim> claimsList, MemberRepository memberRepository, ClaimRepository claimRepository) {
+    public ClaimService(List<UUID> worldsUuidList, ArrayList<Claim> claimsList, MemberRepository memberRepository, ClaimRepository claimRepository) {
         this.worldsClaimsCache = new ConcurrentHashMap<>();
         this.memberRepository = memberRepository;
         this.claimRepository = claimRepository;
 
-        for (String worldUuidString : worldsUuidList) {
-            worldsClaimsCache.put(UUID.fromString(worldUuidString), new NonBlockingHashMapLong<>());
+        for (UUID worldUuid : worldsUuidList) {
+            worldsClaimsCache.put(worldUuid, new NonBlockingHashMapLong<>());
         }
         for (Claim claim : claimsList) {
             addClaimIntoCache(claim);
@@ -55,11 +55,20 @@ public class ClaimService {
                 .put(getChunkKey(claim.chunkX(), claim.chunkZ()), claim);
     }
 
-    public void removeClaimFromCache(Claim claim) {
-        worldsClaimsCache
-                .computeIfAbsent(claim.worldUuid(), _ -> new NonBlockingHashMapLong<>())
-                .remove(getChunkKey(claim.chunkX(), claim.chunkZ()));
+    public void removeClaimFromCache(UUID worldUuid, int chunkX, int chunkZ) {
+        if (worldUuid == null) return;
+        NonBlockingHashMapLong<Claim> worldMap = worldsClaimsCache.get(worldUuid);
+        if (worldMap != null) {
+            worldMap.remove(getChunkKey(chunkX, chunkZ));
+        }
     }
+
+    public void removeClaimFromCache(Claim claim) {
+        if (claim != null) {
+            removeClaimFromCache(claim.worldUuid(), claim.chunkX(), claim.chunkZ());
+        }
+    }
+
 
     public CompletableFuture<ClaimStatus> claimChunk(UUID playerUuid, int chunkX, int chunkZ, UUID worldUuid) {
         // optionally I can add fast check from claimsCache but member cache will also be needed for it
@@ -90,7 +99,7 @@ public class ClaimService {
                     return claimRepository.unclaimChunk(member.kingdomId(), chunkX, chunkZ, worldUuid.toString())
                             .thenApply(status -> {
                                 if (status == ClaimStatus.UNCLAIMED) {
-                                    removeClaimFromCache(new Claim(member.kingdomId(), chunkX, chunkZ, worldUuid));
+                                    removeClaimFromCache(worldUuid, chunkX, chunkZ);
                                 }
                                 return status;
                             });

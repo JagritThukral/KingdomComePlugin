@@ -13,10 +13,12 @@ import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
+import org.bukkit.generator.WorldInfo;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class KingdomCome extends JavaPlugin implements Listener {
 
@@ -31,9 +33,9 @@ public class KingdomCome extends JavaPlugin implements Listener {
         KingdomRepository kingdomRepository = new KingdomRepository(db);
         MemberRepository memberRepository = new MemberRepository(db);
         ClaimRepository claimRepository = new ClaimRepository(db);
-        List<String> worldUuidList = Bukkit.getWorlds()
+        List<UUID> worldUuidList = Bukkit.getWorlds()
                 .stream()
-                .map(world -> world.getUID().toString())
+                .map(WorldInfo::getUID)
                 .toList();
         ArrayList<Claim> claimsList = claimRepository.getAllClaims().join();
         ClaimService claimService = new ClaimService(worldUuidList, claimsList, memberRepository, claimRepository);
