@@ -16,6 +16,7 @@ import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSele
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import static dev.jagritthukral.KingdomCome.exception.MissingKingdomPermissionException.MissingPermission.KICK_MEMBER;
@@ -47,6 +48,10 @@ public class KingdomKickMemberCommand {
         PlayerSelectorArgumentResolver resolver = context.getArgument("PlayerName", PlayerSelectorArgumentResolver.class);
         Player targetPlayer = resolver.resolve(context.getSource()).getFirst();
         String targetPlayerUuid = targetPlayer.getUniqueId().toString();
+
+        if (Objects.equals(targetPlayerUuid, executorPlayerUuid)){
+            executorPlayer.sendMessage("You can't kick yourself");
+        }
         CompletableFuture<Void> future = memberRepository.getKingdomMember(executorPlayerUuid)
                 .thenCompose(optionalKingdomMember -> {
                     KingdomMember executorKingdomMember = optionalKingdomMember.orElseThrow(() -> new MissingKingdomMembershipException("You need to member of kingdom to kick members"));
