@@ -1,5 +1,6 @@
 name: KingdomCome
-version: '1.0'
-main: dev.jagritthukral.KingdomCome.KingdomCome
 description: A Paper plugin for creating kingdoms, declaring wars, introduce player territory
+version: '1.0'
 api-version: '26.3'
+main: dev.jagritthukral.kingdomcome.KingdomCome
+loader: dev.jagritthukral.kingdomcome.KingdomComeLoader
