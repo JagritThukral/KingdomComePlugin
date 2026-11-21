@@ -1,5 +1,6 @@
 package dev.jagritthukral.kingdomcome.models;
 
+import dev.jagritthukral.kingdomcome.exception.WorldNotLoadedException;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -25,7 +26,7 @@ public record KingdomHome(UUID world_uuid, double x, double y, double z) {
     public Location getBukkitLocation() {
         World world = Bukkit.getWorld(world_uuid);
         if (world == null) {
-            throw new IllegalStateException("World: " + world_uuid + " not loaded");
+            throw new WorldNotLoadedException("World: " + world_uuid + " not loaded");
         }
         return new Location(world, x, y, z);
     }
