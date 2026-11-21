@@ -54,7 +54,7 @@ public class KingdomKickMemberCommand {
                                                             if (membersList.isEmpty()) return builder.build();
                                                             for (KingdomMember suggestionMember : membersList) {
                                                                 // Don't suggest the executor themselves
-                                                                if (!member.playerUUID()
+                                                                if (suggestionMember.playerUUID()
                                                                         .equals(executorPlayer.getUniqueId())) {
                                                                     continue;
                                                                 }
