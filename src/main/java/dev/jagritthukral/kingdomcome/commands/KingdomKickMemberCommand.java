@@ -83,8 +83,7 @@ public class KingdomKickMemberCommand {
             return 0;
         }
 
-        if (Objects.equals(targetPlayerName, executorPlayer.name()
-                .toString())) {
+        if (Objects.equals(targetPlayerName, executorPlayer.getName())) {
             executorPlayer.sendMessage("You can't kick yourself");
         }
 
