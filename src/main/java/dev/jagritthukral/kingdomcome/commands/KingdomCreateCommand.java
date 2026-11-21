@@ -5,9 +5,10 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import dev.jagritthukral.kingdomcome.database.repository.KingdomRepository;
 import dev.jagritthukral.kingdomcome.exception.AlreadyInKingdomException;
 import dev.jagritthukral.kingdomcome.exception.DuplicateKingdomException;
+import dev.jagritthukral.kingdomcome.models.Kingdom;
+import dev.jagritthukral.kingdomcome.service.KingdomService;
 import dev.jagritthukral.kingdomcome.utils.CommandAsyncUtils;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -17,14 +18,15 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 public class KingdomCreateCommand {
     private final JavaPlugin plugin;
-    private final KingdomRepository kingdomRepository;
+    private final KingdomService kingdomService;
 
-    public KingdomCreateCommand(JavaPlugin plugin, KingdomRepository kingdomRepository) {
+    public KingdomCreateCommand(JavaPlugin plugin, KingdomService kingdomService) {
         this.plugin = plugin;
-        this.kingdomRepository = kingdomRepository;
+        this.kingdomService = kingdomService;
     }
 
     public LiteralArgumentBuilder<CommandSourceStack> createCommand() {
@@ -45,8 +47,10 @@ public class KingdomCreateCommand {
                 .getPlayerOrThrow();
         Player leaderPlayer = resolver.resolve(context.getSource())
                 .getFirst();
+
         UUID leaderPlayerUuid = leaderPlayer.getUniqueId();
-        CommandAsyncUtils.handle(plugin, executorPlayer, kingdomRepository.createKingdomWithLeader(kingdomName, leaderPlayerUuid, leaderPlayer.getName()))
+        CompletableFuture<Kingdom> future = kingdomService.createKingdom(kingdomName, leaderPlayerUuid, leaderPlayer.getName());
+        CommandAsyncUtils.handle(plugin, executorPlayer, future)
                 .onSuccess(_ -> executorPlayer.sendMessage("Kingdom '" + kingdomName + "' created successfully!"))
                 .on(DuplicateKingdomException.class, "That kingdom name is already taken!")
                 .on(AlreadyInKingdomException.class, "The specified leader player is already in a kingdom")

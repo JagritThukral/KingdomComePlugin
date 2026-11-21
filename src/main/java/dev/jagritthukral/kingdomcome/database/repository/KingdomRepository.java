@@ -111,13 +111,15 @@ public class KingdomRepository {
 
     }
 
-    public CompletableFuture<Void> disbandKingdom(String name) {
-        return CompletableFuture.runAsync(() -> {
-            String deleteKingdomSql = "DELETE FROM Kingdoms WHERE name = ?;";
+    public CompletableFuture<Integer> disbandKingdom(String name) {
+        return CompletableFuture.supplyAsync(() -> {
+            String deleteKingdomSql = "DELETE FROM Kingdoms WHERE name = ? RETURNING kingdom_id;";
             try (Connection connection = db.getConnection(); PreparedStatement deleteKingdomStmt = connection.prepareStatement(deleteKingdomSql)) {
                 deleteKingdomStmt.setString(1, name);
-                int result = deleteKingdomStmt.executeUpdate();
-                if (result == 0) {
+                try (ResultSet kingdomIdResultSet = deleteKingdomStmt.executeQuery()) {
+                    if (kingdomIdResultSet.next()) {
+                        return kingdomIdResultSet.getInt("kingdom_id");
+                    }
                     throw new KingdomNotFoundException("A kingdom named '" + name + "' does not exist.");
                 }
             } catch (SQLException e) {

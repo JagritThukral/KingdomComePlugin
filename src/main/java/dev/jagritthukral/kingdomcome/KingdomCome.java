@@ -7,7 +7,10 @@ import dev.jagritthukral.kingdomcome.database.repository.ClaimRepository;
 import dev.jagritthukral.kingdomcome.database.repository.KingdomRepository;
 import dev.jagritthukral.kingdomcome.database.repository.MemberRepository;
 import dev.jagritthukral.kingdomcome.models.Claim;
+import dev.jagritthukral.kingdomcome.models.KingdomMember;
 import dev.jagritthukral.kingdomcome.service.ClaimService;
+import dev.jagritthukral.kingdomcome.service.KingdomService;
+import dev.jagritthukral.kingdomcome.service.MemberService;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
@@ -33,26 +36,36 @@ public class KingdomCome extends JavaPlugin implements Listener {
         KingdomRepository kingdomRepository = new KingdomRepository(db);
         MemberRepository memberRepository = new MemberRepository(db);
         ClaimRepository claimRepository = new ClaimRepository(db);
+
         List<UUID> worldUuidList = Bukkit.getWorlds()
                 .stream()
                 .map(World::getUID)
                 .toList();
+
+        // get data from db repository
         ArrayList<Claim> claimsList = claimRepository.getAllClaims()
                 .join();
+        ArrayList<KingdomMember> membersList = memberRepository.getAllMembers()
+                .join();
+
+        // initialize services
         ClaimService claimService = new ClaimService(worldUuidList, claimsList, memberRepository, claimRepository);
+        MemberService memberService = new MemberService(membersList, memberRepository);
+        KingdomService kingdomService = new KingdomService(kingdomRepository, memberService, claimService);
         // register events
         this.getServer()
                 .getPluginManager()
                 .registerEvents(this, this);
 
+
         // register commands
         LiteralArgumentBuilder<CommandSourceStack> rootCommand = Commands.literal("k");
-        rootCommand.then(new KingdomCreateCommand(this, kingdomRepository).createCommand());
-        rootCommand.then(new KingdomDisbandCommand(this, kingdomRepository).createCommand());
+        rootCommand.then(new KingdomCreateCommand(this, kingdomService).createCommand());
+        rootCommand.then(new KingdomDisbandCommand(this, kingdomService).createCommand());
         rootCommand.then(new KingdomClaimCommand(this, claimService).createCommand());
         rootCommand.then(new KingdomUnclaimCommand(this, claimService).createCommand());
-        rootCommand.then(new KingdomAddMemberCommand(this, memberRepository).createCommand());
-        rootCommand.then(new KingdomKickMemberCommand(this, memberRepository).createCommand());
+        rootCommand.then(new KingdomAddMemberCommand(this, memberService).createCommand());
+        rootCommand.then(new KingdomKickMemberCommand(this, memberService).createCommand());
         rootCommand.then(new KingdomSetHomeCommand(this, memberRepository, kingdomRepository).createCommand());
         rootCommand.then(new KingdomTpHomeCommand(this, memberRepository, kingdomRepository).createCommand());
         rootCommand.then(new KingdomDeclareWarCommand(db, this).createCommand());

@@ -50,7 +50,7 @@ public class KingdomUnclaimCommand {
 
         CommandAsyncUtils.handle(plugin, player, future)
                 .onSuccess(claimStatus -> player.sendMessage(claimStatus.getMessage()))
-                .on(MissingKingdomMembershipException.class, _ -> player.sendMessage("You need to be member of kingdom to unclaim a chunk"))
+                .on(MissingKingdomMembershipException.class, _ -> player.sendMessage("You need to be leader or duke of kingdom to unclaim a chunk"))
                 .on(MissingKingdomPermissionException.class, e -> player.sendMessage(e.getMessage()))
                 .on(ChunkNotClaimedException.class, e -> player.sendMessage(e.getMessage()))
                 .run();

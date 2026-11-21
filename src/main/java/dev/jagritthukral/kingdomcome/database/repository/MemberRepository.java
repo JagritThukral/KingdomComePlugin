@@ -79,6 +79,23 @@ public class MemberRepository {
         }, asyncExecutor);
     }
 
+    public CompletableFuture<ArrayList<KingdomMember>> getAllMembers() {
+        return CompletableFuture.supplyAsync(() -> {
+            String getAllMembersSql = "SELECT * FROM Players";
+            ArrayList<KingdomMember> membersList = new ArrayList<>();
+            try (Connection connection = db.getConnection(); PreparedStatement getAllMembersStmt = connection.prepareStatement(getAllMembersSql)) {
+                try (ResultSet allMembersResultSet = getAllMembersStmt.executeQuery()) {
+                    while (allMembersResultSet.next()) {
+                        membersList.add(new KingdomMember(allMembersResultSet.getInt("kingdom_id"), UUID.fromString(allMembersResultSet.getString("player_uuid")), allMembersResultSet.getString("last_known_name"), KingdomPlayerRole.valueOf(allMembersResultSet.getString("role")), allMembersResultSet.getString("discord_id")));
+                    }
+                    return membersList;
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
     public CompletableFuture<Void> addKingdomMember(int kingdomId, UUID playerUuid, String lastKnownName) {
         return CompletableFuture.runAsync(() -> {
             String addMemberByKingdomIdSql = "INSERT INTO Players(kingdom_id, player_uuid,last_known_name) VALUES (?,?,?) ;";

@@ -57,7 +57,7 @@ public class KingdomSetHomeCommand {
                 });
         CommandAsyncUtils.handle(plugin, executorPlayer, future)
                 .onSuccess(_ -> executorPlayer.sendMessage("set home for your kingdom successfully"))
-                .on(MissingKingdomMembershipException.class, "You need to be member of a kingdom to set home for the kingdom")
+                .on(MissingKingdomMembershipException.class, "You need to be leader or duke of a kingdom to set home for the kingdom")
                 .on(MissingKingdomPermissionException.class, e -> executorPlayer.sendMessage(e.getMessage()))
                 .run();
 

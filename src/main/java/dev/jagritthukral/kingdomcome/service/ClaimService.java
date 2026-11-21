@@ -11,6 +11,7 @@ import org.jctools.maps.NonBlockingHashMapLong;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -55,7 +56,7 @@ public class ClaimService {
                 .put(getChunkKey(claim.chunkX(), claim.chunkZ()), claim);
     }
 
-    public void removeClaimFromCache(UUID worldUuid, int chunkX, int chunkZ) {
+    void removeClaimFromCache(UUID worldUuid, int chunkX, int chunkZ) {
         if (worldUuid == null) return;
         NonBlockingHashMapLong<Claim> worldMap = worldsClaimsCache.get(worldUuid);
         if (worldMap != null) {
@@ -63,12 +64,19 @@ public class ClaimService {
         }
     }
 
-    public void removeClaimFromCache(Claim claim) {
+    void removeClaimFromCache(Claim claim) {
         if (claim != null) {
             removeClaimFromCache(claim.worldUuid(), claim.chunkX(), claim.chunkZ());
         }
     }
 
+    void removeKingdomClaimsFromCache(int kingdom_id) {
+        worldsClaimsCache.values()
+                .forEach(worldMap -> {
+                    worldMap.values()
+                            .removeIf(claim -> Objects.equals(claim.kingdomId(), kingdom_id));
+                });
+    }
 
     public CompletableFuture<ClaimStatus> claimChunk(UUID playerUuid, int chunkX, int chunkZ, UUID worldUuid) {
         // optionally I can add fast check from claimsCache but member cache will also be needed for it
