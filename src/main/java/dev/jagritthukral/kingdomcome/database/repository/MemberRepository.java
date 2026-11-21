@@ -98,11 +98,11 @@ public class MemberRepository {
         }, asyncExecutor);
     }
 
-    public CompletableFuture<Void> kickKingdomMember(String lastKnownPlayerName, int kingdomId) {
+    public CompletableFuture<Void> kickKingdomMember(UUID playerUuid, int kingdomId) {
         return CompletableFuture.runAsync(() -> {
-            String removeMemberSql = "DELETE FROM Players WHERE last_known_name = ? COLLATE NOCASE AND kingdom_id = ? ;";
+            String removeMemberSql = "DELETE FROM Players WHERE player_uuid = ? COLLATE NOCASE AND kingdom_id = ? ;";
             try (Connection connection = db.getConnection(); PreparedStatement removeMemberStmt = connection.prepareStatement(removeMemberSql)) {
-                removeMemberStmt.setString(1, lastKnownPlayerName);
+                removeMemberStmt.setString(1, playerUuid.toString());
                 removeMemberStmt.setInt(2, kingdomId);
                 int rowsChanged = removeMemberStmt.executeUpdate();
                 if (rowsChanged == 0)
