@@ -16,6 +16,7 @@ import io.papermc.paper.command.brigadier.Commands;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public class KingdomTpHomeCommand {
@@ -42,9 +43,7 @@ public class KingdomTpHomeCommand {
                     .sendMessage("Only players can use this command to teleport to their kingdom's home coordinates.");
             return 0;
         }
-        String executorPlayerUuid = executorPlayer.getUniqueId()
-                .toString();
-
+        UUID executorPlayerUuid = executorPlayer.getUniqueId();
         CompletableFuture<Boolean> future = memberRepository.getKingdomMember(executorPlayerUuid)
                 .thenCompose(optionalKingdomMember -> {
                     KingdomMember kingdomMember = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);

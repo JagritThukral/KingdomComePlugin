@@ -16,6 +16,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import static dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException.MissingPermission.SET_HOME;
@@ -45,8 +46,7 @@ public class KingdomSetHomeCommand {
             return 0;
         }
 
-        String executorPlayerUuid = executorPlayer.getUniqueId()
-                .toString();
+        UUID executorPlayerUuid = executorPlayer.getUniqueId();
         Location location = executorPlayer.getLocation();
         CompletableFuture<Void> future = memberRepository.getKingdomMember(executorPlayerUuid)
                 .thenCompose(optionalKingdomMember -> {

@@ -73,7 +73,7 @@ public class ClaimService {
     public CompletableFuture<ClaimStatus> claimChunk(UUID playerUuid, int chunkX, int chunkZ, UUID worldUuid) {
         // optionally I can add fast check from claimsCache but member cache will also be needed for it
 
-        return memberRepository.getKingdomMember(playerUuid.toString())
+        return memberRepository.getKingdomMember(playerUuid)
                 .thenCompose(optionalKingdomMember -> {
                     KingdomMember member = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
                     if (!member.role()
@@ -92,7 +92,7 @@ public class ClaimService {
 
     public CompletableFuture<ClaimStatus> unclaimChunk(UUID playerUuid, int chunkX, int chunkZ, UUID worldUuid) {
 
-        return memberRepository.getKingdomMember(playerUuid.toString())
+        return memberRepository.getKingdomMember(playerUuid)
                 .thenCompose(optionalClaim -> {
                     KingdomMember member = optionalClaim.orElseThrow(MissingKingdomMembershipException::new);
                     if (!member.role()

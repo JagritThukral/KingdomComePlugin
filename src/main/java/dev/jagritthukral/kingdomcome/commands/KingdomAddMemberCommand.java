@@ -17,6 +17,7 @@ import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSele
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import static dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException.MissingPermission.ADD_MEMBER;
@@ -33,8 +34,7 @@ public class KingdomAddMemberCommand {
     public LiteralArgumentBuilder<CommandSourceStack> createCommand() {
         return Commands.literal("add")
                 .then(Commands.argument("PlayerName", ArgumentTypes.player())
-                        .executes(this::invitePlayer)
-                );
+                        .executes(this::invitePlayer));
     }
 
     private int invitePlayer(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -45,8 +45,7 @@ public class KingdomAddMemberCommand {
                     .sendMessage("Only players can add other players to their kingdom");
             return 0;
         }
-        String executorUuid = executorPlayer.getUniqueId()
-                .toString();
+        UUID executorUuid = executorPlayer.getUniqueId();
         PlayerSelectorArgumentResolver resolver = context.getArgument("PlayerName", PlayerSelectorArgumentResolver.class);
         Player targetPlayer = resolver.resolve(context.getSource())
                 .getFirst();
@@ -54,13 +53,11 @@ public class KingdomAddMemberCommand {
                 .toString();
         CompletableFuture<Void> future = memberRepository.getKingdomMember(executorUuid)
                 .thenCompose(optionalKingdomMember -> {
-                            KingdomMember kingdomMember = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
-                            if (!kingdomMember.role()
-                                    .canAddOrKickMembers())
-                                throw new MissingKingdomPermissionException(ADD_MEMBER);
-                            return memberRepository.addKingdomMember(kingdomMember.kingdomId(), targetPlayerUuid);
-                        }
-                );
+                    KingdomMember kingdomMember = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
+                    if (!kingdomMember.role()
+                            .canAddOrKickMembers()) throw new MissingKingdomPermissionException(ADD_MEMBER);
+                    return memberRepository.addKingdomMember(kingdomMember.kingdomId(), targetPlayerUuid, targetPlayer.getName());
+                });
         CommandAsyncUtils.handle(plugin, executorPlayer, future)
                 .onSuccess(_ -> executorPlayer.sendMessage("Added " + targetPlayer.getName() + " to your kingdom successfully!"))
                 .on(MissingKingdomMembershipException.class, e -> executorPlayer.sendMessage("You need to a leader or duke of a kingdom to add members to the kingdom."))

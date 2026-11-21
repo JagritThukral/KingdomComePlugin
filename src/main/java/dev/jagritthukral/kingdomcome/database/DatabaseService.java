@@ -54,6 +54,7 @@ public class DatabaseService {
                     CREATE TABLE IF NOT EXISTS Players(
                         kingdom_id INTEGER NOT NULL,
                         player_uuid TEXT PRIMARY KEY,
+                        last_known_name TEXT NOT NULL,
                         role TEXT CHECK (role IN ('LEADER','DUKE','MEMBER')) DEFAULT 'MEMBER',
                         discord_id TEXT,
                         FOREIGN KEY (kingdom_id)

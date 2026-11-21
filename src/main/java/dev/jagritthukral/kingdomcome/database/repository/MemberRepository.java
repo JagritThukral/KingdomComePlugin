@@ -10,7 +10,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
@@ -23,15 +25,14 @@ public class MemberRepository {
         this.asyncExecutor = db.getAsyncExecutor();
     }
 
-    public CompletableFuture<Optional<KingdomMember>> getKingdomMember(String playerUuid) {
+    public CompletableFuture<Optional<KingdomMember>> getKingdomMember(UUID playerUuid) {
         return CompletableFuture.supplyAsync(() -> {
             String getKingdomMemberByUuidSql = "SELECT * FROM Players WHERE player_uuid = ?;";
-            try (Connection connection = db.getConnection();
-                 PreparedStatement getKingdomMemberByUuidStmt = connection.prepareStatement(getKingdomMemberByUuidSql)) {
-                getKingdomMemberByUuidStmt.setString(1, playerUuid);
+            try (Connection connection = db.getConnection(); PreparedStatement getKingdomMemberByUuidStmt = connection.prepareStatement(getKingdomMemberByUuidSql)) {
+                getKingdomMemberByUuidStmt.setString(1, playerUuid.toString());
                 try (ResultSet result = getKingdomMemberByUuidStmt.executeQuery()) {
                     if (result.next()) {
-                        return Optional.of(new KingdomMember(result.getInt("kingdom_id"), result.getString("player_uuid"), KingdomPlayerRole.valueOf(result.getString("role")), result.getString("discord_id")));
+                        return Optional.of(new KingdomMember(result.getInt("kingdom_id"), UUID.fromString(result.getString("player_uuid")), result.getString("last_known_name"), KingdomPlayerRole.valueOf(result.getString("role")), result.getString("discord_id")));
                     }
                     return Optional.empty();
                 }
@@ -41,13 +42,31 @@ public class MemberRepository {
         }, asyncExecutor);
     }
 
-    public CompletableFuture<Void> addKingdomMember(int kingdomId, String playerUuid) {
+    public CompletableFuture<ArrayList<KingdomMember>> getAllKingdomMembers(int kingdomId) {
+        return CompletableFuture.supplyAsync(() -> {
+            ArrayList<KingdomMember> membersArrayList = new ArrayList<>();
+            String getAllMembersSql = "SELECT * FROM Players WHERE kingdom_id = ?";
+            try (Connection connection = db.getConnection(); PreparedStatement getAllMembersStmt = connection.prepareStatement(getAllMembersSql)) {
+                getAllMembersStmt.setInt(1, kingdomId);
+                try (ResultSet membersResultSet = getAllMembersStmt.executeQuery()) {
+                    while (membersResultSet.next()) {
+                        membersArrayList.add(new KingdomMember(membersResultSet.getInt("kingdom_id"), UUID.fromString(membersResultSet.getString("player_uuid")), membersResultSet.getString("last_known_name"), KingdomPlayerRole.valueOf(membersResultSet.getString("role")), membersResultSet.getString("discord_id")));
+                    }
+                    return membersArrayList;
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }, asyncExecutor);
+    }
+
+    public CompletableFuture<Void> addKingdomMember(int kingdomId, String playerUuid, String lastKnownName) {
         return CompletableFuture.runAsync(() -> {
-            String addMemberByKingdomIdSql = "INSERT INTO Players(kingdom_id, player_uuid) VALUES (?,?) ;";
-            try (Connection connection = db.getConnection();
-                 PreparedStatement addMemberByKingdomIdStmt = connection.prepareStatement(addMemberByKingdomIdSql)) {
+            String addMemberByKingdomIdSql = "INSERT INTO Players(kingdom_id, player_uuid,last_known_name) VALUES (?,?,?) ;";
+            try (Connection connection = db.getConnection(); PreparedStatement addMemberByKingdomIdStmt = connection.prepareStatement(addMemberByKingdomIdSql)) {
                 addMemberByKingdomIdStmt.setInt(1, kingdomId);
                 addMemberByKingdomIdStmt.setString(2, playerUuid);
+                addMemberByKingdomIdStmt.setString(3, lastKnownName);
                 addMemberByKingdomIdStmt.executeUpdate();
 
             } catch (SQLException e) {
@@ -60,12 +79,11 @@ public class MemberRepository {
         }, asyncExecutor);
     }
 
-    public CompletableFuture<Void> kickKingdomMember(String playerUuid, int kingdomId) {
+    public CompletableFuture<Void> kickKingdomMember(String lastKnownPlayerName, int kingdomId) {
         return CompletableFuture.runAsync(() -> {
-            String removeMemberSql = "DELETE FROM Players WHERE player_uuid = ? AND kingdom_id = ?;";
-            try (Connection connection = db.getConnection();
-                 PreparedStatement removeMemberStmt = connection.prepareStatement(removeMemberSql)) {
-                removeMemberStmt.setString(1, playerUuid);
+            String removeMemberSql = "DELETE FROM Players WHERE last_known_name = ? AND kingdom_id = ?;";
+            try (Connection connection = db.getConnection(); PreparedStatement removeMemberStmt = connection.prepareStatement(removeMemberSql)) {
+                removeMemberStmt.setString(1, lastKnownPlayerName);
                 removeMemberStmt.setInt(2, kingdomId);
                 int rowsChanged = removeMemberStmt.executeUpdate();
                 if (rowsChanged == 0)

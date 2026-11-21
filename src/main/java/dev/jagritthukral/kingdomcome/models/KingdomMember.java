@@ -1,4 +1,7 @@
 package dev.jagritthukral.kingdomcome.models;
 
-public record KingdomMember(Integer kingdomId, String playerUUID, KingdomPlayerRole role, String discordId) {
+import java.util.UUID;
+
+public record KingdomMember(int kingdomId, UUID playerUUID, String lastKnownName, KingdomPlayerRole role,
+                            String discordId) {
 }
