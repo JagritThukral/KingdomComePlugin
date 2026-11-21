@@ -42,17 +42,18 @@ public class MemberRepository {
         }, asyncExecutor);
     }
 
-    public CompletableFuture<Optional<KingdomMember>> getKingdomMemberByName(String lastKnownName, int kingdomId) {
+    public CompletableFuture<ArrayList<KingdomMember>> getKingdomMemberByName(String lastKnownName, int kingdomId) {
         return CompletableFuture.supplyAsync(() -> {
             String getKingdomMemberByNameSql = "SELECT * FROM Players WHERE last_known_name = ? COLLATE NOCASE AND kingdom_id = ?;";
+            ArrayList<KingdomMember> membersList = new ArrayList<>();
             try (Connection connection = db.getConnection(); PreparedStatement getKingdomMemberByNameStmt = connection.prepareStatement(getKingdomMemberByNameSql)) {
                 getKingdomMemberByNameStmt.setString(1, lastKnownName);
                 getKingdomMemberByNameStmt.setInt(2, kingdomId);
                 try (ResultSet memberResultSet = getKingdomMemberByNameStmt.executeQuery()) {
-                    if (memberResultSet.next()) {
-                        return Optional.of(new KingdomMember(memberResultSet.getInt("kingdom_id"), UUID.fromString(memberResultSet.getString("player_uuid")), memberResultSet.getString("last_known_name"), KingdomPlayerRole.valueOf(memberResultSet.getString("role")), memberResultSet.getString("discord_id")));
+                    while (memberResultSet.next()) {
+                        membersList.add(new KingdomMember(memberResultSet.getInt("kingdom_id"), UUID.fromString(memberResultSet.getString("player_uuid")), memberResultSet.getString("last_known_name"), KingdomPlayerRole.valueOf(memberResultSet.getString("role")), memberResultSet.getString("discord_id")));
                     }
-                    return Optional.empty();
+                    return membersList;
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
