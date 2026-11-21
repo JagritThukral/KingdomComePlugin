@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import dev.jagritthukral.kingdomcome.database.repository.MemberRepository;
+import dev.jagritthukral.kingdomcome.exception.CantKickYourselfException;
 import dev.jagritthukral.kingdomcome.exception.MissingKingdomMembershipException;
 import dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException;
 import dev.jagritthukral.kingdomcome.models.KingdomMember;
@@ -98,6 +99,9 @@ public class KingdomKickMemberCommand {
                     return memberRepository.getKingdomMemberByName(targetPlayerName, executorKingdomMember.kingdomId())
                             .thenCompose(optionalTargetMember -> {
                                 KingdomMember targetMember = optionalTargetMember.orElseThrow(() -> new MissingKingdomMembershipException("This player is not member of your kingdom"));
+                                if (targetMember.playerUUID() == executorKingdomMember.playerUUID()) {
+                                    throw new CantKickYourselfException();
+                                }
                                 if (targetMember.role() == KingdomPlayerRole.LEADER) {
                                     throw new MissingKingdomPermissionException(CANT_KICK_LEADER);
                                 }
@@ -109,6 +113,7 @@ public class KingdomKickMemberCommand {
                 });
         CommandAsyncUtils.handle(plugin, executorPlayer, future)
                 .onSuccess(_ -> executorPlayer.sendMessage("Kicked " + targetPlayerName + " from your kingdom successfully"))
+                .on(CantKickYourselfException.class, e -> executorPlayer.sendMessage(e.getMessage()))
                 .on(MissingKingdomMembershipException.class, e -> executorPlayer.sendMessage(e.getMessage()))
                 .on(MissingKingdomPermissionException.class, e -> executorPlayer.sendMessage(e.getMessage()))
                 .run();
