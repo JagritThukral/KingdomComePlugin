@@ -99,7 +99,7 @@ public class KingdomKickMemberCommand {
                     return memberRepository.getKingdomMemberByName(targetPlayerName, executorKingdomMember.kingdomId())
                             .thenCompose(optionalTargetMember -> {
                                 KingdomMember targetMember = optionalTargetMember.orElseThrow(() -> new MissingKingdomMembershipException("This player is not member of your kingdom"));
-                                if (targetMember.playerUUID() == executorKingdomMember.playerUUID()) {
+                                if (Objects.equals(targetMember.playerUUID(), executorKingdomMember.playerUUID())) {
                                     throw new CantKickYourselfException();
                                 }
                                 if (targetMember.role() == KingdomPlayerRole.LEADER) {
