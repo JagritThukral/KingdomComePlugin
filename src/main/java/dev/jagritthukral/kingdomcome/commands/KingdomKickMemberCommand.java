@@ -92,13 +92,13 @@ public class KingdomKickMemberCommand {
 
         CompletableFuture<Void> future = memberRepository.getKingdomMember(executorPlayer.getUniqueId())
                 .thenCompose(optionalKingdomMember -> {
-                    KingdomMember executorKingdomMember = optionalKingdomMember.orElseThrow(() -> new MissingKingdomMembershipException("You need to member of kingdom to kick members"));
+                    KingdomMember executorKingdomMember = optionalKingdomMember.orElseThrow(() -> new MissingKingdomMembershipException("You need to be member of a kingdom to kick members"));
                     if (!executorKingdomMember.role()
                             .canAddOrKickMembers())
                         throw new MissingKingdomPermissionException(KICK_MEMBER);
                     return memberRepository.getKingdomMemberByName(targetPlayerName, executorKingdomMember.kingdomId())
                             .thenCompose(optionalTargetMember -> {
-                                KingdomMember targetMember = optionalTargetMember.orElseThrow(() -> new MissingKingdomMembershipException("This player is not member of your kingdom"));
+                                KingdomMember targetMember = optionalTargetMember.orElseThrow(() -> new MissingKingdomMembershipException("This player is not a member of your kingdom"));
                                 if (Objects.equals(targetMember.playerUUID(), executorKingdomMember.playerUUID())) {
                                     throw new CantKickYourselfException();
                                 }

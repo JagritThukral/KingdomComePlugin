@@ -59,7 +59,7 @@ public class KingdomAddMemberCommand {
                 });
         CommandAsyncUtils.handle(plugin, executorPlayer, future)
                 .onSuccess(_ -> executorPlayer.sendMessage("Added " + targetPlayer.getName() + " to your kingdom successfully!"))
-                .on(MissingKingdomMembershipException.class, _ -> executorPlayer.sendMessage("You need to a leader or duke of a kingdom to add members to the kingdom."))
+                .on(MissingKingdomMembershipException.class, _ -> executorPlayer.sendMessage("You need to be a leader or duke of a kingdom to add members to the kingdom."))
                 .on(MissingKingdomPermissionException.class, e -> executorPlayer.sendMessage(e.getMessage()))
                 .on(AlreadyInKingdomException.class, AlreadyInKingdomException.message)
                 .run();
