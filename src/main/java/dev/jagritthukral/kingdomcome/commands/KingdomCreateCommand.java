@@ -6,6 +6,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import dev.jagritthukral.kingdomcome.database.repository.KingdomRepository;
+import dev.jagritthukral.kingdomcome.exception.AlreadyInKingdomException;
 import dev.jagritthukral.kingdomcome.exception.DuplicateKingdomException;
 import dev.jagritthukral.kingdomcome.utils.CommandAsyncUtils;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -48,6 +49,7 @@ public class KingdomCreateCommand {
         CommandAsyncUtils.handle(plugin, executorPlayer, kingdomRepository.createKingdomWithLeader(kingdomName, leaderPlayerUuid, leaderPlayer.getName()))
                 .onSuccess(_ -> executorPlayer.sendMessage("Kingdom '" + kingdomName + "' created successfully!"))
                 .on(DuplicateKingdomException.class, "That kingdom name is already taken!")
+                .on(AlreadyInKingdomException.class, "The specified leader player is already in a kingdom")
                 .run();
 
         return Command.SINGLE_SUCCESS;
