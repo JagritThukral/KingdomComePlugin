@@ -8,6 +8,7 @@ import dev.jagritthukral.kingdomcome.database.repository.MemberRepository;
 import dev.jagritthukral.kingdomcome.exception.MissingKingdomMembershipException;
 import dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException;
 import dev.jagritthukral.kingdomcome.models.KingdomMember;
+import dev.jagritthukral.kingdomcome.models.KingdomPlayerRole;
 import dev.jagritthukral.kingdomcome.utils.CommandAsyncUtils;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -20,7 +21,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-import static dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException.MissingPermission.KICK_MEMBER;
+import static dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException.MissingPermission.*;
 
 public class KingdomKickMemberCommand {
     private final JavaPlugin plugin;
@@ -83,7 +84,7 @@ public class KingdomKickMemberCommand {
             return 0;
         }
 
-        if (Objects.equals(targetPlayerName, executorPlayer.getName())) {
+        if (targetPlayerName.equalsIgnoreCase(executorPlayer.getName())) {
             executorPlayer.sendMessage("You can't kick yourself");
             return 0;
         }
@@ -94,7 +95,17 @@ public class KingdomKickMemberCommand {
                     if (!executorKingdomMember.role()
                             .canAddOrKickMembers())
                         throw new MissingKingdomPermissionException(KICK_MEMBER);
-                    return memberRepository.kickKingdomMember(targetPlayerName, executorKingdomMember.kingdomId());
+                    return memberRepository.getKingdomMemberByName(targetPlayerName, executorKingdomMember.kingdomId())
+                            .thenCompose(optionalTargetMember -> {
+                                KingdomMember targetMember = optionalTargetMember.orElseThrow(() -> new MissingKingdomMembershipException("This player is not member of your kingdom"));
+                                if (targetMember.role() == KingdomPlayerRole.LEADER) {
+                                    throw new MissingKingdomPermissionException(CANT_KICK_LEADER);
+                                }
+                                if (executorKingdomMember.role() == KingdomPlayerRole.DUKE && targetMember.role() == KingdomPlayerRole.DUKE) {
+                                    throw new MissingKingdomPermissionException(DUKE_CANT_KICK_DUKE);
+                                }
+                                return memberRepository.kickKingdomMember(targetPlayerName, executorKingdomMember.kingdomId());
+                            });
                 });
         CommandAsyncUtils.handle(plugin, executorPlayer, future)
                 .onSuccess(_ -> executorPlayer.sendMessage("Kicked " + targetPlayerName + " from your kingdom successfully"))

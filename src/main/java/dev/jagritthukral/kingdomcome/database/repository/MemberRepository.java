@@ -42,6 +42,24 @@ public class MemberRepository {
         }, asyncExecutor);
     }
 
+    public CompletableFuture<Optional<KingdomMember>> getKingdomMemberByName(String lastKnownName, int kingdomId) {
+        return CompletableFuture.supplyAsync(() -> {
+            String getKingdomMemberByNameSql = "SELECT * FROM Players WHERE last_known_name = ? AND kingdom_id = ?;";
+            try (Connection connection = db.getConnection(); PreparedStatement getKingdomMemberByNameStmt = connection.prepareStatement(getKingdomMemberByNameSql)) {
+                getKingdomMemberByNameStmt.setString(1, lastKnownName);
+                getKingdomMemberByNameStmt.setInt(2, kingdomId);
+                try (ResultSet memberResultSet = getKingdomMemberByNameStmt.executeQuery()) {
+                    if (memberResultSet.next()) {
+                        return Optional.of(new KingdomMember(memberResultSet.getInt("kingdom_id"), UUID.fromString(memberResultSet.getString("player_uuid")), memberResultSet.getString("last_known_name"), KingdomPlayerRole.valueOf(memberResultSet.getString("role")), memberResultSet.getString("discord_id")));
+                    }
+                    return Optional.empty();
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }, asyncExecutor);
+    }
+
     public CompletableFuture<ArrayList<KingdomMember>> getAllKingdomMembers(int kingdomId) {
         return CompletableFuture.supplyAsync(() -> {
             ArrayList<KingdomMember> membersArrayList = new ArrayList<>();
