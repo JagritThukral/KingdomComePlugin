@@ -85,6 +85,7 @@ public class KingdomKickMemberCommand {
 
         if (Objects.equals(targetPlayerName, executorPlayer.getName())) {
             executorPlayer.sendMessage("You can't kick yourself");
+            return 0;
         }
 
         CompletableFuture<Void> future = memberRepository.getKingdomMember(executorPlayer.getUniqueId())
