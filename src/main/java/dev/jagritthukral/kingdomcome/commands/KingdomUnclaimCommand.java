@@ -3,6 +3,7 @@ package dev.jagritthukral.kingdomcome.commands;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import dev.jagritthukral.kingdomcome.exception.ChunkNotClaimedException;
 import dev.jagritthukral.kingdomcome.exception.MissingKingdomMembershipException;
 import dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException;
 import dev.jagritthukral.kingdomcome.models.ClaimStatus;
@@ -51,6 +52,7 @@ public class KingdomUnclaimCommand {
                 .onSuccess(claimStatus -> player.sendMessage(claimStatus.getMessage()))
                 .on(MissingKingdomMembershipException.class, _ -> player.sendMessage("You need to be member of kingdom to unclaim a chunk"))
                 .on(MissingKingdomPermissionException.class, e -> player.sendMessage(e.getMessage()))
+                .on(ChunkNotClaimedException.class, e -> player.sendMessage(e.getMessage()))
                 .run();
         return Command.SINGLE_SUCCESS;
     }
