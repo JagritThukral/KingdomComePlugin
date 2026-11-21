@@ -60,12 +60,12 @@ public class MemberRepository {
         }, asyncExecutor);
     }
 
-    public CompletableFuture<Void> addKingdomMember(int kingdomId, String playerUuid, String lastKnownName) {
+    public CompletableFuture<Void> addKingdomMember(int kingdomId, UUID playerUuid, String lastKnownName) {
         return CompletableFuture.runAsync(() -> {
             String addMemberByKingdomIdSql = "INSERT INTO Players(kingdom_id, player_uuid,last_known_name) VALUES (?,?,?) ;";
             try (Connection connection = db.getConnection(); PreparedStatement addMemberByKingdomIdStmt = connection.prepareStatement(addMemberByKingdomIdSql)) {
                 addMemberByKingdomIdStmt.setInt(1, kingdomId);
-                addMemberByKingdomIdStmt.setString(2, playerUuid);
+                addMemberByKingdomIdStmt.setString(2, playerUuid.toString());
                 addMemberByKingdomIdStmt.setString(3, lastKnownName);
                 addMemberByKingdomIdStmt.executeUpdate();
 

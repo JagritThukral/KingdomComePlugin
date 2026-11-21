@@ -49,8 +49,7 @@ public class KingdomAddMemberCommand {
         PlayerSelectorArgumentResolver resolver = context.getArgument("PlayerName", PlayerSelectorArgumentResolver.class);
         Player targetPlayer = resolver.resolve(context.getSource())
                 .getFirst();
-        String targetPlayerUuid = targetPlayer.getUniqueId()
-                .toString();
+        UUID targetPlayerUuid = targetPlayer.getUniqueId();
         CompletableFuture<Void> future = memberRepository.getKingdomMember(executorUuid)
                 .thenCompose(optionalKingdomMember -> {
                     KingdomMember kingdomMember = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
