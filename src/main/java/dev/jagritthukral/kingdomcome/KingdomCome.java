@@ -12,8 +12,8 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.event.Listener;
-import org.bukkit.generator.WorldInfo;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
@@ -35,7 +35,7 @@ public class KingdomCome extends JavaPlugin implements Listener {
         ClaimRepository claimRepository = new ClaimRepository(db);
         List<UUID> worldUuidList = Bukkit.getWorlds()
                 .stream()
-                .map(WorldInfo::getUID)
+                .map(World::getUID)
                 .toList();
         ArrayList<Claim> claimsList = claimRepository.getAllClaims()
                 .join();
