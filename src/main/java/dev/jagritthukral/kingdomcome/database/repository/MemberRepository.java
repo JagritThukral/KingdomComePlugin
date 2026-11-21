@@ -44,7 +44,7 @@ public class MemberRepository {
 
     public CompletableFuture<Optional<KingdomMember>> getKingdomMemberByName(String lastKnownName, int kingdomId) {
         return CompletableFuture.supplyAsync(() -> {
-            String getKingdomMemberByNameSql = "SELECT * FROM Players WHERE last_known_name = ? AND kingdom_id = ?;";
+            String getKingdomMemberByNameSql = "SELECT * FROM Players WHERE last_known_name = ? COLLATE NOCASE AND kingdom_id = ?;";
             try (Connection connection = db.getConnection(); PreparedStatement getKingdomMemberByNameStmt = connection.prepareStatement(getKingdomMemberByNameSql)) {
                 getKingdomMemberByNameStmt.setString(1, lastKnownName);
                 getKingdomMemberByNameStmt.setInt(2, kingdomId);
