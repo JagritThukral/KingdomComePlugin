@@ -104,6 +104,7 @@ public class DatabaseService {
             }
 
             // Version 2: future migration (e.g., adding indexes & a new column)
+            // https://www.sqlite.org/lang_altertable.html
             if (currentVersion < 2) {
                 // statement.executeUpdate("ALTER TABLE Kingdoms ADD COLUMN description TEXT;");
             }

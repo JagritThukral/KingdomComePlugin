@@ -47,7 +47,7 @@ public class KingdomRepository {
 
                         return Optional.of(new Kingdom(
                                 kingdomResultSet.getInt("kingdom_id"),
-                                kingdomResultSet.getString("leader_uuid"),
+                                UUID.fromString(kingdomResultSet.getString("leader_uuid")),
                                 name,
                                 kingdomResultSet.getLong("created_at"),
                                 home
@@ -61,11 +61,11 @@ public class KingdomRepository {
         }, asyncExecutor);
     }
 
-    public CompletableFuture<Kingdom> createKingdomWithLeader(String name, String leaderUuid) {
+    public CompletableFuture<Kingdom> createKingdomWithLeader(String name, UUID leaderUuid, String lastKnownName) {
         return CompletableFuture.supplyAsync(() -> {
 
             String insertKingdomSql = "INSERT INTO Kingdoms (name, leader_uuid,created_at) VALUES (?, ?, ?);";
-            String insertPlayerSql = "INSERT INTO Players (kingdom_id, player_uuid, role) VALUES (?, ?, ?);";
+            String insertPlayerSql = "INSERT INTO Players (kingdom_id, player_uuid, role,last_known_name) VALUES (?, ?, ?, ?);";
             long createdAt = Instant.now()
                     .getEpochSecond();
             try (Connection connection = db.getConnection()) {
@@ -73,7 +73,7 @@ public class KingdomRepository {
                 try (PreparedStatement kingdomStmt = connection.prepareStatement(insertKingdomSql, Statement.RETURN_GENERATED_KEYS); PreparedStatement playerStmt = connection.prepareStatement(insertPlayerSql)) {
 
                     kingdomStmt.setString(1, name);
-                    kingdomStmt.setString(2, leaderUuid);
+                    kingdomStmt.setString(2, leaderUuid.toString());
                     kingdomStmt.setLong(3, createdAt);
                     kingdomStmt.executeUpdate();
 
@@ -86,8 +86,9 @@ public class KingdomRepository {
                     }
 
                     playerStmt.setInt(1, kingdomId);
-                    playerStmt.setString(2, leaderUuid);
+                    playerStmt.setString(2, leaderUuid.toString());
                     playerStmt.setString(3, KingdomPlayerRole.LEADER.name());
+                    playerStmt.setString(4, lastKnownName);
                     playerStmt.executeUpdate();
 
                     connection.commit();

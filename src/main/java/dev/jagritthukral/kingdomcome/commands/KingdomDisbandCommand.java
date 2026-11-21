@@ -44,8 +44,7 @@ public class KingdomDisbandCommand {
             CommandAsyncUtils.handle(plugin, player, kingdomRepository.findKingdomByName(name)
                             .thenCompose(kingdomOptional -> {
                                 Kingdom kingdom = kingdomOptional.orElseThrow(() -> new KingdomNotFoundException(name));
-                                if (!isOp && !Objects.equals(kingdom.leaderUuid(), player.getUniqueId()
-                                        .toString())) {
+                                if (!isOp && !Objects.equals(kingdom.leaderUuid(), player.getUniqueId())) {
                                     throw new MissingKingdomOwnershipException();
                                 }
                                 return kingdomRepository.disbandKingdom(name);

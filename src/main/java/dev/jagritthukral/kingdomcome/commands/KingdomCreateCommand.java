@@ -15,6 +15,8 @@ import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSele
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.UUID;
+
 public class KingdomCreateCommand {
     private final JavaPlugin plugin;
     private final KingdomRepository kingdomRepository;
@@ -42,9 +44,8 @@ public class KingdomCreateCommand {
                 .getPlayerOrThrow();
         Player leaderPlayer = resolver.resolve(context.getSource())
                 .getFirst();
-        String leaderPlayerUuid = leaderPlayer.getUniqueId()
-                .toString();
-        CommandAsyncUtils.handle(plugin, executorPlayer, kingdomRepository.createKingdomWithLeader(kingdomName, leaderPlayerUuid))
+        UUID leaderPlayerUuid = leaderPlayer.getUniqueId();
+        CommandAsyncUtils.handle(plugin, executorPlayer, kingdomRepository.createKingdomWithLeader(kingdomName, leaderPlayerUuid, leaderPlayer.getName()))
                 .onSuccess(_ -> executorPlayer.sendMessage("Kingdom '" + kingdomName + "' created successfully!"))
                 .on(DuplicateKingdomException.class, "That kingdom name is already taken!")
                 .run();
