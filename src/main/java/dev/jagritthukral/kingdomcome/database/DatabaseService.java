@@ -15,6 +15,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class DatabaseService {
+    // everytime I want to make changes to database, increase TARGET_SCHEMA_VERSION by 1 and the queries to runMigration
+    private static final int TARGET_SCHEMA_VERSION = 2;
     private final JavaPlugin plugin;
     private final ExecutorService asyncExecutor;
     private HikariDataSource dataSource;
@@ -30,58 +32,94 @@ public class DatabaseService {
                 .debug("Initializing Database");
         HikariConfig config = createConfig();
         this.dataSource = new HikariDataSource(config);
+        try (Connection connection = getConnection()) {
+            int currentVersion = getSchemaVersion(connection);
+            plugin.getSLF4JLogger()
+                    .info("Current DB schema version: {}, Target: {}", currentVersion, TARGET_SCHEMA_VERSION);
 
-        try (Connection connection = getConnection();
-             Statement statement = connection.createStatement()) {
-            statement.addBatch("""
-                    CREATE TABLE IF NOT EXISTS Kingdoms(
-                        kingdom_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT NOT NULL UNIQUE,
-                        leader_uuid TEXT NOT NULL,
-                        created_at BIGINT NOT NULL,
-                        home_world_uuid TEXT,
-                        home_x REAL,
-                        home_y REAL,
-                        home_z REAL,
-                        CHECK (
-                            (home_world_uuid IS NULL AND home_x IS NULL AND home_y IS NULL AND home_z IS NULL) OR
-                            (home_world_uuid IS NOT NULL AND home_x IS NOT NULL AND home_y IS NOT NULL AND home_z IS NOT NULL)
-                        )
-                    )
-                    """);
-
-            statement.addBatch("""
-                    CREATE TABLE IF NOT EXISTS Players(
-                        kingdom_id INTEGER NOT NULL,
-                        player_uuid TEXT PRIMARY KEY,
-                        last_known_name TEXT NOT NULL,
-                        role TEXT CHECK (role IN ('LEADER','DUKE','MEMBER')) DEFAULT 'MEMBER',
-                        discord_id TEXT,
-                        FOREIGN KEY (kingdom_id)
-                        REFERENCES Kingdoms(kingdom_id)
-                        ON DELETE CASCADE
-                    )
-                    """);
-
-            statement.addBatch("""
-                    CREATE TABLE IF NOT EXISTS Claims(
-                        kingdom_id INTEGER NOT NULL,
-                        chunk_x INTEGER NOT NULL,
-                        chunk_z INTEGER NOT NULL,
-                        world_uuid TEXT NOT NULL,
-                        PRIMARY KEY (chunk_x, chunk_z, world_uuid),
-                        FOREIGN KEY (kingdom_id)
-                        REFERENCES Kingdoms(kingdom_id)
-                        ON DELETE CASCADE
-                    )
-                    """);
-            // todo: add indexes
-            statement.executeBatch();
+            if (currentVersion < TARGET_SCHEMA_VERSION) {
+                runMigrations(connection, currentVersion);
+            }
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to execute DDL database initialization", e);
+            throw new RuntimeException("Failed to initialize or migrate database", e);
+        }
+
+    }
+
+    private int getSchemaVersion(Connection connection) throws SQLException {
+        try (Statement stmt = connection.createStatement();
+             var rs = stmt.executeQuery("PRAGMA user_version;")) {
+            return rs.next() ? rs.getInt(1) : 0;
         }
     }
 
+    private void runMigrations(Connection connection, int currentVersion) throws SQLException {
+        boolean originalAutoCommit = connection.getAutoCommit();
+        connection.setAutoCommit(false);
+
+        try (Statement statement = connection.createStatement()) {
+            // Version 1: Initial Schema, executes for a brand-new server (version: 0)
+            if (currentVersion < 1) {
+                statement.executeUpdate("""
+                        CREATE TABLE IF NOT EXISTS Kingdoms(
+                            kingdom_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            name TEXT NOT NULL UNIQUE,
+                            leader_uuid TEXT NOT NULL,
+                            created_at BIGINT NOT NULL,
+                            home_world_uuid TEXT,
+                            home_x REAL,
+                            home_y REAL,
+                            home_z REAL,
+                            CHECK (
+                                (home_world_uuid IS NULL AND home_x IS NULL AND home_y IS NULL AND home_z IS NULL) OR
+                                (home_world_uuid IS NOT NULL AND home_x IS NOT NULL AND home_y IS NOT NULL AND home_z IS NOT NULL)
+                            )
+                        )
+                        """);
+
+                statement.executeUpdate("""
+                        CREATE TABLE IF NOT EXISTS Players(
+                            kingdom_id INTEGER NOT NULL,
+                            player_uuid TEXT PRIMARY KEY,
+                            last_known_name TEXT NOT NULL,
+                            role TEXT CHECK (role IN ('LEADER','DUKE','MEMBER')) DEFAULT 'MEMBER',
+                            discord_id TEXT,
+                            FOREIGN KEY (kingdom_id) REFERENCES Kingdoms(kingdom_id) ON DELETE CASCADE
+                        )
+                        """);
+
+                statement.executeUpdate("""
+                        CREATE TABLE IF NOT EXISTS Claims(
+                            kingdom_id INTEGER NOT NULL,
+                            chunk_x INTEGER NOT NULL,
+                            chunk_z INTEGER NOT NULL,
+                            world_uuid TEXT NOT NULL,
+                            PRIMARY KEY (chunk_x, chunk_z, world_uuid),
+                            FOREIGN KEY (kingdom_id) REFERENCES Kingdoms(kingdom_id) ON DELETE CASCADE
+                        )
+                        """);
+                // todo: add all index
+                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_players_kingdom ON Players(kingdom_id);");
+                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_claims_kingdom ON Claims(kingdom_id);");
+            }
+
+            // Version 2: future migration (e.g., adding indexes & a new column)
+            if (currentVersion < 2) {
+                // statement.executeUpdate("ALTER TABLE Kingdoms ADD COLUMN description TEXT;");
+            }
+
+            // Update the version number (PRAGMA does not support '?' parameters)
+            statement.executeUpdate("PRAGMA user_version = " + TARGET_SCHEMA_VERSION + ";");
+            connection.commit();
+            plugin.getSLF4JLogger()
+                    .info("Successfully migrated database to version {}", TARGET_SCHEMA_VERSION);
+        } catch (SQLException e) {
+            connection.rollback();
+            throw e;
+        } finally {
+            connection.setAutoCommit(originalAutoCommit);
+        }
+    }
 
     private @NonNull HikariConfig createConfig() {
         plugin.getSLF4JLogger()
