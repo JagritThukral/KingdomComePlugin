@@ -15,7 +15,7 @@ public class KingdomComeLoader implements PluginLoader {
         MavenLibraryResolver resolver = new MavenLibraryResolver();
 
         resolver.addRepository(new RemoteRepository.Builder(
-                "central", "default", "https://apache.org"
+                "central", "default", MavenLibraryResolver.MAVEN_CENTRAL_DEFAULT_MIRROR
         ).build());
 
         resolver.addDependency(new Dependency(
