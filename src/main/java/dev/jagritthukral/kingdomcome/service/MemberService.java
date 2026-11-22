@@ -36,7 +36,7 @@ public class MemberService {
     public List<KingdomMember> getAllKingdomMembersFromCache(int kingdomId) {
         return membersCache.values()
                 .stream()
-                .filter(member -> Objects.equals(member.kingdomId(), kingdomId))
+                .filter(member -> member.kingdomId() == kingdomId)
                 .toList();
     }
 
@@ -50,7 +50,7 @@ public class MemberService {
 
     void removeKingdomMembersFromCache(int kingdomId) {
         membersCache.values()
-                .removeIf(kingdomMember -> Objects.equals(kingdomId, kingdomMember.kingdomId()));
+                .removeIf(kingdomMember -> kingdomId == kingdomMember.kingdomId());
     }
 
     public CompletableFuture<Void> addKingdomMember(UUID executorPlayerUUid, UUID targetPlayerUuid, String targetPlayerName) {
@@ -91,7 +91,7 @@ public class MemberService {
                         memberRepository.getKingdomMember(targetPlayerUuid)
                                 .thenCompose(optionalTarget -> {
                                     KingdomMember targetMember = optionalTarget
-                                            .filter(m -> Objects.equals(m.kingdomId(), executorKingdomMember.kingdomId()))
+                                            .filter(m -> m.kingdomId() == executorKingdomMember.kingdomId())
                                             .orElseThrow(() -> new MissingKingdomMembershipException("This player is not a member of your kingdom"));
                                     return executeKick(executorKingdomMember, targetMember);
                                 })
