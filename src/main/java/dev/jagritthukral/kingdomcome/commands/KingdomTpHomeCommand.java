@@ -13,6 +13,8 @@ import dev.jagritthukral.kingdomcome.service.MemberService;
 import dev.jagritthukral.kingdomcome.utils.CommandAsyncUtils;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -49,7 +51,32 @@ public class KingdomTpHomeCommand {
                     KingdomMember kingdomMember = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
                     int kingdomId = kingdomMember.kingdomId();
                     return kingdomService.getHome(kingdomId)
-                            .thenCompose(home -> executorPlayer.teleportAsync(home.getBukkitLocation()));
+                            .thenCompose(home -> {
+                                CompletableFuture<Boolean> tpFuture = new CompletableFuture<>();
+                                Location targetLocation = home.getBukkitLocation();
+
+                                ScheduledTask task = executorPlayer.getScheduler()
+                                        .run(plugin, _ -> {
+                                            executorPlayer.teleportAsync(targetLocation)
+                                                    .whenComplete((success, throwable) -> {
+                                                        if (throwable != null) {
+                                                            tpFuture.completeExceptionally(throwable);
+                                                        } else {
+                                                            tpFuture.complete(success);
+                                                        }
+                                                    });
+                                        }, () -> {
+                                            // Retired callback: runs if the player logs out before the task executes
+                                            tpFuture.complete(false);
+                                        });
+
+                                if (task == null) {
+                                    // Player retired before the task could even be scheduled
+                                    tpFuture.complete(false);
+                                }
+
+                                return tpFuture;
+                            });
                 });
 
         CommandAsyncUtils.handle(plugin, executorPlayer, future)
