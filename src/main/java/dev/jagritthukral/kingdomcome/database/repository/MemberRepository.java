@@ -93,7 +93,7 @@ public class MemberRepository {
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
-        });
+        }, asyncExecutor);
     }
 
     public CompletableFuture<Void> addKingdomMember(int kingdomId, UUID playerUuid, String lastKnownName) {
