@@ -102,7 +102,7 @@ public class MemberService {
         return memberRepository.getKingdomMember(executorPlayerUuid)
                 .thenApply(optionalKingdomMember -> {
                     KingdomMember executor = optionalKingdomMember
-                            .orElseThrow(() -> new MissingKingdomMembershipException("You need to be member of a kingdom to kick members"));
+                            .orElseThrow(() -> new MissingKingdomMembershipException("You need to be a leader or duke of a kingdom to kick members"));
                     if (!executor.role()
                             .canAddOrKickMembers()) {
                         throw new MissingKingdomPermissionException(KICK_MEMBER);
