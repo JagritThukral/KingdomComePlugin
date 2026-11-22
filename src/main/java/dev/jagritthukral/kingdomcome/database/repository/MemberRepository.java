@@ -117,7 +117,7 @@ public class MemberRepository {
 
     public CompletableFuture<Void> kickKingdomMember(UUID playerUuid, int kingdomId) {
         return CompletableFuture.runAsync(() -> {
-            String removeMemberSql = "DELETE FROM Players WHERE player_uuid = ? COLLATE NOCASE AND kingdom_id = ? ;";
+            String removeMemberSql = "DELETE FROM Players WHERE player_uuid = ? AND kingdom_id = ? ;";
             try (Connection connection = db.getConnection(); PreparedStatement removeMemberStmt = connection.prepareStatement(removeMemberSql)) {
                 removeMemberStmt.setString(1, playerUuid.toString());
                 removeMemberStmt.setInt(2, kingdomId);
