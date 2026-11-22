@@ -52,8 +52,10 @@ public class MemberService {
 
     public CompletableFuture<Optional<KingdomMember>> getKingdomMember(UUID playerUuid) {
         // fast fetch from cache hit
-        if (membersCache.containsKey(playerUuid))
-            return CompletableFuture.completedFuture(Optional.of(membersCache.get(playerUuid)));
+        KingdomMember cachedMember = membersCache.get(playerUuid);
+        if (cachedMember != null) {
+            return CompletableFuture.completedFuture(Optional.of(cachedMember));
+        }
 
         return memberRepository.getKingdomMember(playerUuid);
     }
