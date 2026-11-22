@@ -2,6 +2,7 @@ package dev.jagritthukral.kingdomcome.service;
 
 import dev.jagritthukral.kingdomcome.database.repository.KingdomRepository;
 import dev.jagritthukral.kingdomcome.models.Kingdom;
+import dev.jagritthukral.kingdomcome.models.KingdomHome;
 import dev.jagritthukral.kingdomcome.models.KingdomMember;
 import dev.jagritthukral.kingdomcome.models.KingdomPlayerRole;
 
@@ -35,5 +36,13 @@ public class KingdomService {
                     claimService.removeKingdomClaimsFromCache(kingdomId);
                     return null;
                 });
+    }
+
+    public CompletableFuture<KingdomHome> getHome(int kingdomId) {
+        return kingdomRepository.getKingdomHome(kingdomId);
+    }
+
+    public CompletableFuture<Void> setHome(int kingdomId, KingdomHome home) {
+        return kingdomRepository.setKingdomHome(kingdomId, home);
     }
 }

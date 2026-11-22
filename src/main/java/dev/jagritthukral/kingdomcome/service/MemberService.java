@@ -8,10 +8,7 @@ import dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException
 import dev.jagritthukral.kingdomcome.models.KingdomMember;
 import dev.jagritthukral.kingdomcome.models.KingdomPlayerRole;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -51,6 +48,14 @@ public class MemberService {
     void removeKingdomMembersFromCache(int kingdomId) {
         membersCache.values()
                 .removeIf(kingdomMember -> kingdomId == kingdomMember.kingdomId());
+    }
+
+    public CompletableFuture<Optional<KingdomMember>> getKingdomMember(UUID playerUuid) {
+        // fast fetch from cache hit
+        if (membersCache.containsKey(playerUuid))
+            return CompletableFuture.completedFuture(Optional.of(membersCache.get(playerUuid)));
+
+        return memberRepository.getKingdomMember(playerUuid);
     }
 
     public CompletableFuture<Void> addKingdomMember(UUID executorPlayerUUid, UUID targetPlayerUuid, String targetPlayerName) {

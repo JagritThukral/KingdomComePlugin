@@ -3,13 +3,13 @@ package dev.jagritthukral.kingdomcome.commands;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import dev.jagritthukral.kingdomcome.database.repository.KingdomRepository;
-import dev.jagritthukral.kingdomcome.database.repository.MemberRepository;
 import dev.jagritthukral.kingdomcome.exception.KingdomHomeNotSetException;
 import dev.jagritthukral.kingdomcome.exception.KingdomNotFoundException;
 import dev.jagritthukral.kingdomcome.exception.MissingKingdomMembershipException;
 import dev.jagritthukral.kingdomcome.exception.WorldNotLoadedException;
 import dev.jagritthukral.kingdomcome.models.KingdomMember;
+import dev.jagritthukral.kingdomcome.service.KingdomService;
+import dev.jagritthukral.kingdomcome.service.MemberService;
 import dev.jagritthukral.kingdomcome.utils.CommandAsyncUtils;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -21,13 +21,13 @@ import java.util.concurrent.CompletableFuture;
 
 public class KingdomTpHomeCommand {
     private final JavaPlugin plugin;
-    private final MemberRepository memberRepository;
-    private final KingdomRepository kingdomRepository;
+    private final KingdomService kingdomService;
+    private final MemberService memberService;
 
-    public KingdomTpHomeCommand(JavaPlugin plugin, MemberRepository memberRepository, KingdomRepository kingdomRepository) {
+    public KingdomTpHomeCommand(JavaPlugin plugin, KingdomService kingdomService, MemberService memberService) {
         this.plugin = plugin;
-        this.memberRepository = memberRepository;
-        this.kingdomRepository = kingdomRepository;
+        this.kingdomService = kingdomService;
+        this.memberService = memberService;
     }
 
     public LiteralArgumentBuilder<CommandSourceStack> createCommand() {
@@ -44,11 +44,11 @@ public class KingdomTpHomeCommand {
             return 0;
         }
         UUID executorPlayerUuid = executorPlayer.getUniqueId();
-        CompletableFuture<Boolean> future = memberRepository.getKingdomMember(executorPlayerUuid)
+        CompletableFuture<Boolean> future = memberService.getKingdomMember(executorPlayerUuid)
                 .thenCompose(optionalKingdomMember -> {
                     KingdomMember kingdomMember = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
                     int kingdomId = kingdomMember.kingdomId();
-                    return kingdomRepository.getKingdomHome(kingdomId)
+                    return kingdomService.getHome(kingdomId)
                             .thenCompose(home -> executorPlayer.teleportAsync(home.getBukkitLocation()));
                 });
 

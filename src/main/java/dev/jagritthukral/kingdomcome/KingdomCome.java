@@ -66,8 +66,8 @@ public class KingdomCome extends JavaPlugin implements Listener {
         rootCommand.then(new KingdomUnclaimCommand(this, claimService).createCommand());
         rootCommand.then(new KingdomAddMemberCommand(this, memberService).createCommand());
         rootCommand.then(new KingdomKickMemberCommand(this, memberService).createCommand());
-        rootCommand.then(new KingdomSetHomeCommand(this, memberRepository, kingdomRepository).createCommand());
-        rootCommand.then(new KingdomTpHomeCommand(this, memberRepository, kingdomRepository).createCommand());
+        rootCommand.then(new KingdomSetHomeCommand(this, kingdomService, memberService).createCommand());
+        rootCommand.then(new KingdomTpHomeCommand(this, kingdomService, memberService).createCommand());
         rootCommand.then(new KingdomDeclareWarCommand(db, this).createCommand());
         rootCommand.then(new KingdomCancelWarCommand(db, this).createCommand());
         LiteralArgumentBuilder<CommandSourceStack> rootChatCommand = Commands.literal("kc");

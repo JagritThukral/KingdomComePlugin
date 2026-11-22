@@ -9,6 +9,8 @@ import dev.jagritthukral.kingdomcome.exception.MissingKingdomMembershipException
 import dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException;
 import dev.jagritthukral.kingdomcome.models.KingdomHome;
 import dev.jagritthukral.kingdomcome.models.KingdomMember;
+import dev.jagritthukral.kingdomcome.service.KingdomService;
+import dev.jagritthukral.kingdomcome.service.MemberService;
 import dev.jagritthukral.kingdomcome.utils.CommandAsyncUtils;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -23,13 +25,13 @@ import static dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionEx
 
 public class KingdomSetHomeCommand {
     private final JavaPlugin plugin;
-    private final MemberRepository memberRepository;
-    private final KingdomRepository kingdomRepository;
+    private final KingdomService kingdomService;
+    private final MemberService memberService;
 
-    public KingdomSetHomeCommand(JavaPlugin plugin, MemberRepository memberRepository, KingdomRepository kingdomRepository) {
+    public KingdomSetHomeCommand(JavaPlugin plugin, KingdomService kingdomService, MemberService memberService) {
         this.plugin = plugin;
-        this.memberRepository = memberRepository;
-        this.kingdomRepository = kingdomRepository;
+        this.kingdomService = kingdomService;
+        this.memberService = memberService;
     }
 
     public LiteralArgumentBuilder<CommandSourceStack> createCommand() {
@@ -48,12 +50,12 @@ public class KingdomSetHomeCommand {
 
         UUID executorPlayerUuid = executorPlayer.getUniqueId();
         Location location = executorPlayer.getLocation();
-        CompletableFuture<Void> future = memberRepository.getKingdomMember(executorPlayerUuid)
+        CompletableFuture<Void> future = memberService.getKingdomMember(executorPlayerUuid)
                 .thenCompose(optionalKingdomMember -> {
                     KingdomMember kingdomMember = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
                     if (!kingdomMember.role()
                             .canSetHome()) throw new MissingKingdomPermissionException(SET_HOME);
-                    return kingdomRepository.setKingdomHome(kingdomMember.kingdomId(), new KingdomHome(location));
+                    return kingdomService.setHome(kingdomMember.kingdomId(), new KingdomHome(location));
                 });
         CommandAsyncUtils.handle(plugin, executorPlayer, future)
                 .onSuccess(_ -> executorPlayer.sendMessage("set home for your kingdom successfully"))
