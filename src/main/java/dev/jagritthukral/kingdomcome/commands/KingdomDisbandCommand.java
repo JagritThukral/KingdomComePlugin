@@ -5,7 +5,6 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import dev.jagritthukral.kingdomcome.exception.KingdomNotFoundException;
-import dev.jagritthukral.kingdomcome.exception.MissingKingdomOwnershipException;
 import dev.jagritthukral.kingdomcome.service.KingdomService;
 import dev.jagritthukral.kingdomcome.utils.CommandAsyncUtils;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -42,7 +41,6 @@ public class KingdomDisbandCommand {
             CommandAsyncUtils.handle(plugin, player, kingdomService.disbandKingdom(name))
                     .onSuccess(_ -> player.sendMessage("Disbanded Kingdom " + name))
                     .on(KingdomNotFoundException.class, "No kingdom named '" + name + "' was found.")
-                    .on(MissingKingdomOwnershipException.class, "You are not the leader of this kingdom.\nOnly a leader can disband a kingdom.")
                     .run();
             return Command.SINGLE_SUCCESS;
         } catch (Exception e) {
