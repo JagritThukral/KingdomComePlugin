@@ -2,6 +2,7 @@ package dev.jagritthukral.kingdomcome.service;
 
 import dev.jagritthukral.kingdomcome.database.repository.MemberRepository;
 import dev.jagritthukral.kingdomcome.exception.CantKickYourselfException;
+import dev.jagritthukral.kingdomcome.exception.DuplicateMemberNameException;
 import dev.jagritthukral.kingdomcome.exception.MissingKingdomMembershipException;
 import dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException;
 import dev.jagritthukral.kingdomcome.models.KingdomMember;
@@ -15,7 +16,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException.MissingPermission.*;
-import static dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException.MissingPermission.DUKE_CANT_KICK_DUKE;
 
 public class MemberService {
     private final ConcurrentHashMap<UUID, KingdomMember> membersCache;
@@ -70,36 +70,61 @@ public class MemberService {
     }
 
     public CompletableFuture<Void> removeKingdomMember(UUID executorPlayerUuid, String targetPlayerName) {
+        return validateAndGetExecutor(executorPlayerUuid)
+                .thenCompose(executorKingdomMember ->
+                        memberRepository.getKingdomMemberByName(targetPlayerName, executorKingdomMember.kingdomId())
+                                .thenCompose(membersList -> {
+                                    if (membersList.size() > 1) {
+                                        throw new DuplicateMemberNameException(membersList);
+                                    }
+                                    if (membersList.isEmpty()) {
+                                        throw new MissingKingdomMembershipException("This player is not a member of your kingdom");
+                                    }
+                                    return executeKick(executorKingdomMember, membersList.getFirst());
+                                })
+                );
+    }
+
+    public CompletableFuture<Void> removeKingdomMember(UUID executorPlayerUuid, UUID targetPlayerUuid) {
+        return validateAndGetExecutor(executorPlayerUuid)
+                .thenCompose(executorKingdomMember ->
+                        memberRepository.getKingdomMember(targetPlayerUuid)
+                                .thenCompose(optionalTarget -> {
+                                    KingdomMember targetMember = optionalTarget
+                                            .filter(m -> Objects.equals(m.kingdomId(), executorKingdomMember.kingdomId()))
+                                            .orElseThrow(() -> new MissingKingdomMembershipException("This player is not a member of your kingdom"));
+                                    return executeKick(executorKingdomMember, targetMember);
+                                })
+                );
+    }
+
+    private CompletableFuture<KingdomMember> validateAndGetExecutor(UUID executorPlayerUuid) {
         return memberRepository.getKingdomMember(executorPlayerUuid)
-                .thenCompose(optionalKingdomMember -> {
-                    KingdomMember executorKingdomMember = optionalKingdomMember.orElseThrow(() -> new MissingKingdomMembershipException("You need to be member of a kingdom to kick members"));
-                    if (!executorKingdomMember.role()
-                            .canAddOrKickMembers())
+                .thenApply(optionalKingdomMember -> {
+                    KingdomMember executor = optionalKingdomMember
+                            .orElseThrow(() -> new MissingKingdomMembershipException("You need to be member of a kingdom to kick members"));
+                    if (!executor.role()
+                            .canAddOrKickMembers()) {
                         throw new MissingKingdomPermissionException(KICK_MEMBER);
-                    return memberRepository.getKingdomMemberByName(targetPlayerName, executorKingdomMember.kingdomId())
-                            .thenCompose(membersList -> {
-                                if (membersList.size() > 1) {
-                                    // multiple kingdom member with same name error
-                                }
-                                if (membersList.isEmpty()) {
-                                    throw new MissingKingdomMembershipException("This player is not a member of your kingdom");
-                                }
-                                KingdomMember targetMember = membersList.getFirst();
-                                if (Objects.equals(targetMember.playerUUID(), executorKingdomMember.playerUUID())) {
-                                    throw new CantKickYourselfException();
-                                }
-                                if (targetMember.role() == KingdomPlayerRole.LEADER) {
-                                    throw new MissingKingdomPermissionException(CANT_KICK_LEADER);
-                                }
-                                if (executorKingdomMember.role() == KingdomPlayerRole.DUKE && targetMember.role() == KingdomPlayerRole.DUKE) {
-                                    throw new MissingKingdomPermissionException(DUKE_CANT_KICK_DUKE);
-                                }
-                                return memberRepository.kickKingdomMember(targetMember.playerUUID(), executorKingdomMember.kingdomId())
-                                        .thenApply(_ -> {
-                                            removeMemberFromCache(targetMember.playerUUID());
-                                            return null;
-                                        });
-                            });
+                    }
+                    return executor;
+                });
+    }
+
+    private CompletableFuture<Void> executeKick(KingdomMember executor, KingdomMember target) {
+        if (Objects.equals(target.playerUUID(), executor.playerUUID())) {
+            throw new CantKickYourselfException();
+        }
+        if (target.role() == KingdomPlayerRole.LEADER) {
+            throw new MissingKingdomPermissionException(CANT_KICK_LEADER);
+        }
+        if (executor.role() == KingdomPlayerRole.DUKE && target.role() == KingdomPlayerRole.DUKE) {
+            throw new MissingKingdomPermissionException(DUKE_CANT_KICK_DUKE);
+        }
+        return memberRepository.kickKingdomMember(target.playerUUID(), executor.kingdomId())
+                .thenApply(_ -> {
+                    removeMemberFromCache(target.playerUUID());
+                    return null;
                 });
     }
 }
