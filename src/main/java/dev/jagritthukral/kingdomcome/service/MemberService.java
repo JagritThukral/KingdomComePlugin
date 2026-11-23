@@ -30,7 +30,7 @@ public class MemberService {
         return membersCache.get(playerUuid);
     }
 
-    public List<KingdomMember> getAllKingdomMembersFromCache(int kingdomId) {
+    public List<KingdomMember> getAllKingdomMembersFromCache(long kingdomId) {
         return membersCache.values()
                 .stream()
                 .filter(member -> member.kingdomId() == kingdomId)
