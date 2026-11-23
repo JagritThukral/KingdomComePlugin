@@ -84,7 +84,7 @@ public class KingdomRepository {
             } catch (SQLException e) {
                 throw new RuntimeException("failed to get all kingdoms", e);
             }
-        });
+        }, asyncExecutor);
     }
 
     public CompletableFuture<Kingdom> createKingdomWithLeader(String name, UUID leaderUuid, String lastKnownName) {
