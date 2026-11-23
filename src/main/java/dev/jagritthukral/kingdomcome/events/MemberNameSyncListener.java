@@ -23,8 +23,10 @@ public class MemberNameSyncListener implements Listener {
         UUID playerUuid = player.getUniqueId();
         String newName = player.getName();
         KingdomMember cachedMember = memberService.getMemberFromCache(playerUuid);
+        // if player isn't in a kingdom (not in member cache) skip
+        if (cachedMember == null) return;
         // if playerName is not same as cached lasKnownName, update it
-        if (Objects.equals(newName, cachedMember.lastKnownName())) {
+        if (!Objects.equals(newName, cachedMember.lastKnownName())) {
             memberService.updateMemberName(playerUuid, newName);
         }
     }
