@@ -1,6 +1,6 @@
 package dev.jagritthukral.kingdomcome.exception;
 
-public class KingdomHomeNotSetException extends RuntimeException {
+public class KingdomHomeNotSetException extends KingdomException {
     private static final String message = "A home location has not been set for this kingdom";
 
     public KingdomHomeNotSetException() {
