@@ -6,6 +6,7 @@ import dev.jagritthukral.kingdomcome.models.KingdomHome;
 import dev.jagritthukral.kingdomcome.models.KingdomMember;
 import dev.jagritthukral.kingdomcome.models.KingdomPlayerRole;
 import org.jctools.maps.NonBlockingHashMapLong;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.UUID;
@@ -27,7 +28,7 @@ public class KingdomService {
         }
     }
 
-    public Kingdom getKingdomFromCache(long kingdomId){
+    public Kingdom getKingdomFromCache(long kingdomId) {
         return kingdomCache.get(kingdomId);
     }
 
@@ -39,7 +40,7 @@ public class KingdomService {
         kingdomCache.computeIfPresent(kingdomId, (_, kingdom) -> kingdom.withHome(home));
     }
 
-    void removeKingdomFromCache(long kingdomId){
+    void removeKingdomFromCache(long kingdomId) {
         kingdomCache.remove(kingdomId);
     }
 
@@ -64,7 +65,7 @@ public class KingdomService {
                 });
     }
 
-    public CompletableFuture<KingdomHome> getHome(long kingdomId) {
+    public CompletableFuture<@Nullable KingdomHome> getHome(long kingdomId) {
         // fetch from cache if cache hits, tp home can be run at high rate so getting from cache is better
         Kingdom cachedKingdom = kingdomCache.get(kingdomId);
         if (cachedKingdom != null && cachedKingdom.home() != null) {

@@ -7,6 +7,7 @@ import dev.jagritthukral.kingdomcome.exception.KingdomNotFoundException;
 import dev.jagritthukral.kingdomcome.models.Kingdom;
 import dev.jagritthukral.kingdomcome.models.KingdomHome;
 import dev.jagritthukral.kingdomcome.models.KingdomPlayerRole;
+import org.jspecify.annotations.Nullable;
 
 import java.sql.*;
 import java.time.Instant;
@@ -154,7 +155,7 @@ public class KingdomRepository {
         }, asyncExecutor);
     }
 
-    public CompletableFuture<KingdomHome> getKingdomHome(long kingdomId) {
+    public CompletableFuture<@Nullable KingdomHome> getKingdomHome(long kingdomId) {
         return CompletableFuture.supplyAsync(() -> {
             String getHomeSql = "SELECT home_world_uuid, home_x, home_y, home_z FROM Kingdoms WHERE kingdom_id = ?;";
             try (Connection connection = db.getConnection(); PreparedStatement getHomeStmt = connection.prepareStatement(getHomeSql)) {

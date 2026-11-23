@@ -52,6 +52,8 @@ public class KingdomTpHomeCommand {
                     long kingdomId = kingdomMember.kingdomId();
                     return kingdomService.getHome(kingdomId)
                             .thenCompose(home -> {
+                                if (home == null) throw new KingdomHomeNotSetException();
+
                                 CompletableFuture<Boolean> tpFuture = new CompletableFuture<>();
                                 Location targetLocation = home.getBukkitLocation();
 
