@@ -80,7 +80,7 @@ public class ClaimService {
     void removeKingdomClaimsFromCache(long kingdom_id) {
         worldsClaimsCache.values()
                 .forEach(worldMap -> worldMap.values()
-                        .removeIf(claim -> claim.kingdomId() != kingdom_id));
+                        .removeIf(claim -> claim.kingdomId() == kingdom_id));
     }
 
     public CompletableFuture<ClaimStatus> claimChunk(UUID playerUuid, int chunkX, int chunkZ, UUID worldUuid) {
