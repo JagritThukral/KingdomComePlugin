@@ -45,9 +45,9 @@ public class ClaimService {
 
     }
 
-    public Claim getClaimFromCache(UUID worldUuid, int chunkX, int chunkZ) {
+    public Claim getClaimFromCache(UUID worldUuid, long chunkKey) {
         NonBlockingHashMapLong<Claim> worldMap = worldsClaimsCache.get(worldUuid);
-        return worldMap != null ? worldMap.get(getChunkKey(chunkX, chunkZ)) : null;
+        return worldMap != null ? worldMap.get(chunkKey) : null;
     }
 
     public void addClaimIntoCache(Claim claim) {
@@ -70,7 +70,7 @@ public class ClaimService {
         }
     }
 
-    void removeKingdomClaimsFromCache(int kingdom_id) {
+    void removeKingdomClaimsFromCache(long kingdom_id) {
         worldsClaimsCache.values()
                 .forEach(worldMap -> {
                     worldMap.values()

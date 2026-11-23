@@ -60,6 +60,7 @@ public class DatabaseService {
         try (Statement statement = connection.createStatement()) {
             // Version 1: Initial Schema, executes for a brand-new server (version: 0)
             if (currentVersion < 1) {
+                // INTEGER in sqlite already 8 bytes aka 64bit so get long works
                 statement.executeUpdate("""
                         CREATE TABLE IF NOT EXISTS Kingdoms(
                             kingdom_id INTEGER PRIMARY KEY AUTOINCREMENT,

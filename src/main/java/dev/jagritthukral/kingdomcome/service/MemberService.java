@@ -45,9 +45,21 @@ public class MemberService {
         membersCache.remove(playerUuid);
     }
 
-    void removeKingdomMembersFromCache(int kingdomId) {
+    void removeKingdomMembersFromCache(long kingdomId) {
         membersCache.values()
                 .removeIf(kingdomMember -> kingdomId == kingdomMember.kingdomId());
+    }
+
+    void updateMemberNameInCache(UUID playerUuid, String newName) {
+        membersCache.computeIfPresent(playerUuid, ((_, member) -> new KingdomMember(member.kingdomId(), member.playerUUID(), newName, member.role(), member.discordId())));
+    }
+
+    public CompletableFuture<Void> updateMemberName(UUID playerUuid, String newName) {
+        return memberRepository.updateMemberName(playerUuid, newName)
+                .thenApply(_ -> {
+                    updateMemberNameInCache(playerUuid, newName);
+                    return null;
+                });
     }
 
     public CompletableFuture<Optional<KingdomMember>> getKingdomMember(UUID playerUuid) {

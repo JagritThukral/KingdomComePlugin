@@ -49,7 +49,7 @@ public class KingdomTpHomeCommand {
         CompletableFuture<Boolean> future = memberService.getKingdomMember(executorPlayerUuid)
                 .thenCompose(optionalKingdomMember -> {
                     KingdomMember kingdomMember = optionalKingdomMember.orElseThrow(MissingKingdomMembershipException::new);
-                    int kingdomId = kingdomMember.kingdomId();
+                    long kingdomId = kingdomMember.kingdomId();
                     return kingdomService.getHome(kingdomId)
                             .thenCompose(home -> {
                                 CompletableFuture<Boolean> tpFuture = new CompletableFuture<>();
@@ -57,14 +57,20 @@ public class KingdomTpHomeCommand {
 
                                 ScheduledTask task = executorPlayer.getScheduler()
                                         .run(plugin, _ -> {
-                                            executorPlayer.teleportAsync(targetLocation)
-                                                    .whenComplete((success, throwable) -> {
-                                                        if (throwable != null) {
-                                                            tpFuture.completeExceptionally(throwable);
-                                                        } else {
-                                                            tpFuture.complete(success);
-                                                        }
-                                                    });
+                                            {
+                                                try {
+                                                    executorPlayer.teleportAsync(targetLocation)
+                                                            .whenComplete((success, throwable) -> {
+                                                                if (throwable != null) {
+                                                                    tpFuture.completeExceptionally(throwable);
+                                                                } else {
+                                                                    tpFuture.complete(success);
+                                                                }
+                                                            });
+                                                } catch (Throwable t) {
+                                                    tpFuture.completeExceptionally(t);
+                                                }
+                                            }
                                         }, () -> {
                                             // Retired callback: runs if the player logs out before the task executes
                                             tpFuture.complete(false);

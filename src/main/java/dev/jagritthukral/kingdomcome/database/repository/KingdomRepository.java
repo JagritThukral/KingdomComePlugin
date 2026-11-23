@@ -41,12 +41,12 @@ public class KingdomRepository {
                         boolean yNull = kingdomResultSet.wasNull();
                         double z = kingdomResultSet.getDouble("home_z");
                         boolean zNull = kingdomResultSet.wasNull();
-                        Optional<KingdomHome> home = (worldNull || xNull || yNull || zNull)
-                                ? Optional.empty()
-                                : Optional.of(new KingdomHome(worldUuid, x, y, z));
+                        KingdomHome home = (worldNull || xNull || yNull || zNull)
+                                ? null
+                                : new KingdomHome(worldUuid, x, y, z);
 
                         return Optional.of(new Kingdom(
-                                kingdomResultSet.getInt("kingdom_id"),
+                                kingdomResultSet.getLong("kingdom_id"),
                                 UUID.fromString(kingdomResultSet.getString("leader_uuid")),
                                 name,
                                 kingdomResultSet.getLong("created_at"),
@@ -77,22 +77,22 @@ public class KingdomRepository {
                     kingdomStmt.setLong(3, createdAt);
                     kingdomStmt.executeUpdate();
 
-                    int kingdomId;
+                    long kingdomId;
                     try (ResultSet rs = kingdomStmt.getGeneratedKeys()) {
                         if (!rs.next()) {
                             throw new SQLException("No generated kingdom_id returned");
                         }
-                        kingdomId = rs.getInt(1); // get the AUTO_INCREMENTED value
+                        kingdomId = rs.getLong(1); // get the AUTO_INCREMENTED value
                     }
 
-                    playerStmt.setInt(1, kingdomId);
+                    playerStmt.setLong(1, kingdomId);
                     playerStmt.setString(2, leaderUuid.toString());
                     playerStmt.setString(3, KingdomPlayerRole.LEADER.name());
                     playerStmt.setString(4, lastKnownName);
                     playerStmt.executeUpdate();
 
                     connection.commit();
-                    return new Kingdom(kingdomId, leaderUuid, name, createdAt, Optional.empty());
+                    return new Kingdom(kingdomId, leaderUuid, name, createdAt, null);
                 } catch (SQLException | RuntimeException e) {
                     connection.rollback();
                     throw e;
@@ -111,14 +111,14 @@ public class KingdomRepository {
 
     }
 
-    public CompletableFuture<Integer> disbandKingdom(String name) {
+    public CompletableFuture<Long> disbandKingdom(String name) {
         return CompletableFuture.supplyAsync(() -> {
             String deleteKingdomSql = "DELETE FROM Kingdoms WHERE name = ? RETURNING kingdom_id;";
             try (Connection connection = db.getConnection(); PreparedStatement deleteKingdomStmt = connection.prepareStatement(deleteKingdomSql)) {
                 deleteKingdomStmt.setString(1, name);
                 try (ResultSet kingdomIdResultSet = deleteKingdomStmt.executeQuery()) {
                     if (kingdomIdResultSet.next()) {
-                        return kingdomIdResultSet.getInt("kingdom_id");
+                        return kingdomIdResultSet.getLong("kingdom_id");
                     }
                     throw new KingdomNotFoundException("A kingdom named '" + name + "' does not exist.");
                 }
@@ -128,11 +128,11 @@ public class KingdomRepository {
         }, asyncExecutor);
     }
 
-    public CompletableFuture<KingdomHome> getKingdomHome(int kingdomId) {
+    public CompletableFuture<KingdomHome> getKingdomHome(long kingdomId) {
         return CompletableFuture.supplyAsync(() -> {
             String getHomeSql = "SELECT home_world_uuid, home_x, home_y, home_z FROM Kingdoms WHERE kingdom_id = ?;";
             try (Connection connection = db.getConnection(); PreparedStatement getHomeStmt = connection.prepareStatement(getHomeSql)) {
-                getHomeStmt.setInt(1, kingdomId);
+                getHomeStmt.setLong(1, kingdomId);
                 try (ResultSet homeResult = getHomeStmt.executeQuery()) {
                     if (!homeResult.next()) {
                         throw new KingdomNotFoundException();
@@ -161,7 +161,7 @@ public class KingdomRepository {
         }, asyncExecutor);
     }
 
-    public CompletableFuture<Void> setKingdomHome(int kingdomId, KingdomHome home) {
+    public CompletableFuture<Void> setKingdomHome(long kingdomId, KingdomHome home) {
         return CompletableFuture.runAsync(() -> {
             String addHomeSql = "UPDATE Kingdoms SET home_world_uuid = ?,home_x = ?,home_y = ?,home_z = ? WHERE kingdom_id = ?;";
             try (Connection connection = db.getConnection(); PreparedStatement addHomeStmt = connection.prepareStatement(addHomeSql)) {
@@ -170,7 +170,7 @@ public class KingdomRepository {
                 addHomeStmt.setDouble(2, home.x());
                 addHomeStmt.setDouble(3, home.y());
                 addHomeStmt.setDouble(4, home.z());
-                addHomeStmt.setInt(5, kingdomId);
+                addHomeStmt.setLong(5, kingdomId);
                 int rowsChanged = addHomeStmt.executeUpdate();
                 if (rowsChanged == 0) throw new RuntimeException("failed to set kingdom home");
             } catch (SQLException e) {

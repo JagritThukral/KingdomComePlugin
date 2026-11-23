@@ -6,6 +6,8 @@ import dev.jagritthukral.kingdomcome.database.DatabaseService;
 import dev.jagritthukral.kingdomcome.database.repository.ClaimRepository;
 import dev.jagritthukral.kingdomcome.database.repository.KingdomRepository;
 import dev.jagritthukral.kingdomcome.database.repository.MemberRepository;
+import dev.jagritthukral.kingdomcome.events.ClaimProtectionListener;
+import dev.jagritthukral.kingdomcome.events.MemberNameSyncListener;
 import dev.jagritthukral.kingdomcome.models.Claim;
 import dev.jagritthukral.kingdomcome.models.KingdomMember;
 import dev.jagritthukral.kingdomcome.service.ClaimService;
@@ -23,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class KingdomCome extends JavaPlugin implements Listener {
+public class KingdomCome extends JavaPlugin {
 
     private DatabaseService db;
 
@@ -52,11 +54,19 @@ public class KingdomCome extends JavaPlugin implements Listener {
         ClaimService claimService = new ClaimService(worldUuidList, claimsList, memberRepository, claimRepository);
         MemberService memberService = new MemberService(membersList, memberRepository);
         KingdomService kingdomService = new KingdomService(kingdomRepository, memberService, claimService);
-        // register events
-        this.getServer()
-                .getPluginManager()
-                .registerEvents(this, this);
 
+        // initialize listeners
+        List<Listener> listeners = List.of(
+                new MemberNameSyncListener(memberService),
+                new ClaimProtectionListener(claimService, memberService, kingdomService)
+        );
+
+        // register events
+        for (Listener listener : listeners) {
+            this.getServer()
+                    .getPluginManager()
+                    .registerEvents(listener, this);
+        }
 
         // register commands
         LiteralArgumentBuilder<CommandSourceStack> rootCommand = Commands.literal("k");
