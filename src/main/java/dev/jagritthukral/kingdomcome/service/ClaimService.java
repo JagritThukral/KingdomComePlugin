@@ -11,7 +11,6 @@ import org.jctools.maps.NonBlockingHashMapLong;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,11 +37,19 @@ public class ClaimService {
         }
     }
 
-    // convert x to long and shift by 32 bit, convert z into long and prevent sign extension ruining the value by using bit masking
-    // F - 15 in hexadecimal, 0xFFFFFFFF is 4,294,967,295 (2³² - 1) or 32 bit with each bit 1, L at the end convert it into a long (64bit) preceding 32 0 bit and 32 1 bit
+    // convert x to long, convert z into long and shift by 32 bit.
+    // sign extension - when we convert an int into long the 32 bit msb aka sign bit is copied to rest of the new 32 bits, to preserve the value
+    // prevent sign extension ruining the value by using bit masking
+    // value is ruined because now we have 64bit long with leftmost 32 bits written
+    // when we wanted to write other int
+    // so using 0xFFFFFFFFL the first(leftmost) 32 bits 0, rest(rightmost) are 1.
+    // so when we use & 0xFFFFFFFFL with an int, we can remove sign extension bcs 0 & 1 or 0 = 0
+    // F - 15 in hexadecimal, 0xFFFFFFFF is 4,294,967,295 (2³² - 1)
+    // or 32 bit with each bit 1, L at the end convert it into
+    // a long (64bit) preceding 32 0 bit and 32 1 bit
+    // use OR (|) to add them
     private long getChunkKey(int x, int z) {
-        return ((long) x << 32) | (z & 0xFFFFFFFFL);
-
+        return ((long) x & 0xFFFFFFFFL) | (((long) z & 0xFFFFFFFFL) << 32);
     }
 
     public Claim getClaimFromCache(UUID worldUuid, long chunkKey) {
@@ -72,10 +79,8 @@ public class ClaimService {
 
     void removeKingdomClaimsFromCache(long kingdom_id) {
         worldsClaimsCache.values()
-                .forEach(worldMap -> {
-                    worldMap.values()
-                            .removeIf(claim -> Objects.equals(claim.kingdomId(), kingdom_id));
-                });
+                .forEach(worldMap -> worldMap.values()
+                        .removeIf(claim -> claim.kingdomId() != kingdom_id));
     }
 
     public CompletableFuture<ClaimStatus> claimChunk(UUID playerUuid, int chunkX, int chunkZ, UUID worldUuid) {

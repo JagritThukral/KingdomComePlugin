@@ -27,6 +27,10 @@ public class KingdomService {
         }
     }
 
+    public Kingdom getKingdomFromCache(long kingdomId){
+        return kingdomCache.get(kingdomId);
+    }
+
     void addKingdomToCache(long kingdomId, Kingdom kingdom) {
         kingdomCache.put(kingdomId, kingdom);
     }
