@@ -3,7 +3,6 @@ package dev.jagritthukral.kingdomcome.database.repository;
 import dev.jagritthukral.kingdomcome.database.DatabaseService;
 import dev.jagritthukral.kingdomcome.exception.AlreadyInKingdomException;
 import dev.jagritthukral.kingdomcome.exception.DuplicateKingdomException;
-import dev.jagritthukral.kingdomcome.exception.KingdomHomeNotSetException;
 import dev.jagritthukral.kingdomcome.exception.KingdomNotFoundException;
 import dev.jagritthukral.kingdomcome.models.Kingdom;
 import dev.jagritthukral.kingdomcome.models.KingdomHome;
@@ -11,6 +10,7 @@ import dev.jagritthukral.kingdomcome.models.KingdomPlayerRole;
 
 import java.sql.*;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -25,6 +25,21 @@ public class KingdomRepository {
         this.asyncExecutor = db.getAsyncExecutor();
     }
 
+    private KingdomHome getKingdomHomeObjectFromResultSet(ResultSet resultSet) throws SQLException {
+        String worldUuidString = resultSet.getString("home_world_uuid");
+        boolean worldNull = worldUuidString == null || worldUuidString.isEmpty();
+        UUID worldUuid = worldNull ? null : UUID.fromString(worldUuidString);
+        double x = resultSet.getDouble("home_x");
+        boolean xNull = resultSet.wasNull();
+        double y = resultSet.getDouble("home_y");
+        boolean yNull = resultSet.wasNull();
+        double z = resultSet.getDouble("home_z");
+        boolean zNull = resultSet.wasNull();
+        return (worldNull || xNull || yNull || zNull)
+                ? null
+                : new KingdomHome(worldUuid, x, y, z);
+    }
+
     public CompletableFuture<Optional<Kingdom>> findKingdomByName(String name) {
         return CompletableFuture.supplyAsync(() -> {
             String findKingdomByNameSql = "SELECT * from Kingdoms WHERE name = ?;";
@@ -32,25 +47,14 @@ public class KingdomRepository {
                 findKingdomByNameStmt.setString(1, name);
                 try (ResultSet kingdomResultSet = findKingdomByNameStmt.executeQuery()) {
                     if (kingdomResultSet.next()) {
-                        String worldUuidString = kingdomResultSet.getString("home_world_uuid");
-                        boolean worldNull = worldUuidString == null || worldUuidString.isEmpty();
-                        UUID worldUuid = worldNull ? null : UUID.fromString(worldUuidString);
-                        double x = kingdomResultSet.getDouble("home_x");
-                        boolean xNull = kingdomResultSet.wasNull();
-                        double y = kingdomResultSet.getDouble("home_y");
-                        boolean yNull = kingdomResultSet.wasNull();
-                        double z = kingdomResultSet.getDouble("home_z");
-                        boolean zNull = kingdomResultSet.wasNull();
-                        KingdomHome home = (worldNull || xNull || yNull || zNull)
-                                ? null
-                                : new KingdomHome(worldUuid, x, y, z);
+
 
                         return Optional.of(new Kingdom(
                                 kingdomResultSet.getLong("kingdom_id"),
                                 UUID.fromString(kingdomResultSet.getString("leader_uuid")),
                                 name,
                                 kingdomResultSet.getLong("created_at"),
-                                home
+                                getKingdomHomeObjectFromResultSet(kingdomResultSet)
                         ));
                     }
                     return Optional.empty();
@@ -59,6 +63,28 @@ public class KingdomRepository {
                 throw new RuntimeException(e);
             }
         }, asyncExecutor);
+    }
+
+    public CompletableFuture<ArrayList<Kingdom>> getAllKingdoms() {
+        return CompletableFuture.supplyAsync(() -> {
+            ArrayList<Kingdom> kingdomsList = new ArrayList<>();
+            String getAllKingdomsSql = "SELECT * FROM Kingdoms";
+            try (Connection connection = db.getConnection(); PreparedStatement getAllKingdomsStmt = connection.prepareStatement(getAllKingdomsSql)) {
+                try (ResultSet kingdomsResultSet = getAllKingdomsStmt.executeQuery()) {
+                    while (kingdomsResultSet.next()) {
+                        kingdomsList.add(new Kingdom(kingdomsResultSet.getLong("kingdom_id"),
+                                UUID.fromString(kingdomsResultSet.getString("leader_uuid")),
+                                kingdomsResultSet.getString("name"),
+                                kingdomsResultSet.getLong("created_at"),
+                                getKingdomHomeObjectFromResultSet(kingdomsResultSet)
+                        ));
+                    }
+                    return kingdomsList;
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException("failed to get all kingdoms", e);
+            }
+        });
     }
 
     public CompletableFuture<Kingdom> createKingdomWithLeader(String name, UUID leaderUuid, String lastKnownName) {
@@ -137,21 +163,7 @@ public class KingdomRepository {
                     if (!homeResult.next()) {
                         throw new KingdomNotFoundException();
                     }
-                    String worldUuidString = homeResult.getString("home_world_uuid");
-                    boolean worldNull = worldUuidString == null || worldUuidString.isEmpty();
-                    UUID worldUuid = worldNull ? null : UUID.fromString(worldUuidString);
-                    double x = homeResult.getDouble("home_x");
-                    boolean xNull = homeResult.wasNull();
-                    double y = homeResult.getDouble("home_y");
-                    boolean yNull = homeResult.wasNull();
-                    double z = homeResult.getDouble("home_z");
-                    boolean zNull = homeResult.wasNull();
-
-                    if (worldNull || xNull || yNull || zNull) {
-                        throw new KingdomHomeNotSetException();
-                    }
-
-                    return new KingdomHome(worldUuid, x, y, z);
+                    return getKingdomHomeObjectFromResultSet(homeResult);
                 }
 
 

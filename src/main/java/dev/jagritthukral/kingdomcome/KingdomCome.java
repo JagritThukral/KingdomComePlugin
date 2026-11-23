@@ -9,6 +9,7 @@ import dev.jagritthukral.kingdomcome.database.repository.MemberRepository;
 import dev.jagritthukral.kingdomcome.events.ClaimProtectionListener;
 import dev.jagritthukral.kingdomcome.events.MemberNameSyncListener;
 import dev.jagritthukral.kingdomcome.models.Claim;
+import dev.jagritthukral.kingdomcome.models.Kingdom;
 import dev.jagritthukral.kingdomcome.models.KingdomMember;
 import dev.jagritthukral.kingdomcome.service.ClaimService;
 import dev.jagritthukral.kingdomcome.service.KingdomService;
@@ -49,11 +50,13 @@ public class KingdomCome extends JavaPlugin {
                 .join();
         ArrayList<KingdomMember> membersList = memberRepository.getAllMembers()
                 .join();
+        ArrayList<Kingdom> kingdomsList = kingdomRepository.getAllKingdoms()
+                .join();
 
         // initialize services
         ClaimService claimService = new ClaimService(worldUuidList, claimsList, memberRepository, claimRepository);
         MemberService memberService = new MemberService(membersList, memberRepository);
-        KingdomService kingdomService = new KingdomService(kingdomRepository, memberService, claimService);
+        KingdomService kingdomService = new KingdomService(kingdomsList, kingdomRepository, memberService, claimService);
 
         // initialize listeners
         List<Listener> listeners = List.of(
