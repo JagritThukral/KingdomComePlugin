@@ -1,6 +1,7 @@
 package dev.jagritthukral.kingdomcome.events;
 
 import dev.jagritthukral.kingdomcome.models.Claim;
+import dev.jagritthukral.kingdomcome.models.Kingdom;
 import dev.jagritthukral.kingdomcome.models.KingdomMember;
 import dev.jagritthukral.kingdomcome.service.ClaimService;
 import dev.jagritthukral.kingdomcome.service.KingdomService;
@@ -11,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.UUID;
 
@@ -18,8 +20,10 @@ public class ClaimProtectionListener implements Listener {
     private final ClaimService claimService;
     private final MemberService memberService;
     private final KingdomService kingdomService;
+    private final JavaPlugin plugin;
 
-    public ClaimProtectionListener(ClaimService claimService, MemberService memberService, KingdomService kingdomService) {
+    public ClaimProtectionListener(JavaPlugin plugin, ClaimService claimService, MemberService memberService, KingdomService kingdomService) {
+        this.plugin = plugin;
         this.claimService = claimService;
         this.memberService = memberService;
         this.kingdomService = kingdomService;
@@ -34,16 +38,30 @@ public class ClaimProtectionListener implements Listener {
                 .getUID();
 
         Player player = event.getPlayer();
-        KingdomMember cachedMember = memberService.getMemberFromCache(player.getUniqueId());
         // if player is not cache they are probably (hopefully) not part of any kingdom, and it isn't a cache miss
+        KingdomMember cachedMember = memberService.getMemberFromCache(player.getUniqueId());
 
         Claim cachedChunkClaim = claimService.getClaimFromCache(worldUuid, chunk.getChunkKey());
         // if chunk doesn't exist in cache it probably (hopefully) wilderness. so don't stop the action
         if (cachedChunkClaim == null) return;
 
+        Kingdom claimKingdom = kingdomService.getKingdomFromCache(cachedChunkClaim.kingdomId());
+        String claimKingdomName = claimKingdom != null ? claimKingdom.name() : "a kingdom";
+        if (claimKingdom == null) {
+            plugin.getSLF4JLogger()
+                    .warn("Kingdom {} was not found in cache, either this chunk shouldn't be in the cache or there's issue with kingdom cache", cachedChunkClaim.kingdomId());
+        }
+        String nonMembersCantBreakBlockInClaimMsg = "This chunk is claimed by  " + claimKingdomName + ". You cannot break blocks in this claim if you are not part of this kingdom";
         // a player who isn't part of any kingdom, can't break block blocks of this kingdom
         if (cachedMember == null) {
-            player.sendMessage("This chunk belongs to");
+            player.sendMessage(nonMembersCantBreakBlockInClaimMsg);
+            event.setCancelled(true);
+            return;
+        }
+
+        if (cachedMember.kingdomId() != cachedChunkClaim.kingdomId()) {
+            player.sendMessage(nonMembersCantBreakBlockInClaimMsg);
+            event.setCancelled(true);
         }
 
 

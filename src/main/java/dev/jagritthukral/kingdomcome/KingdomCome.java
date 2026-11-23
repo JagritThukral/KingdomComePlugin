@@ -61,7 +61,7 @@ public class KingdomCome extends JavaPlugin {
         // initialize listeners
         List<Listener> listeners = List.of(
                 new MemberNameSyncListener(memberService),
-                new ClaimProtectionListener(claimService, memberService, kingdomService)
+                new ClaimProtectionListener(this, claimService, memberService, kingdomService)
         );
 
         // register events
