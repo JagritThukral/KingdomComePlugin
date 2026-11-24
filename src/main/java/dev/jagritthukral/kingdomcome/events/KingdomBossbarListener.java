@@ -176,12 +176,14 @@ public class KingdomBossbarListener implements Listener, MembershipChangeListene
 
         // Refresh BossBar for any online player currently standing in that chunk
         for (Player player : world.getPlayers()) {
-            Location loc = player.getLocation();
-            if ((loc.getBlockX() >> 4) == chunkX && (loc.getBlockZ() >> 4) == chunkZ) {
-                lastKingdom.remove(player.getUniqueId());
-                player.getScheduler()
-                        .run(plugin, (_) -> updatePlayerLocation(player, loc), null);
-            }
+            player.getScheduler()
+                    .run(plugin, (_) -> {
+                        Location loc = player.getLocation();
+                        if ((loc.getBlockX() >> 4) == chunkX && (loc.getBlockZ() >> 4) == chunkZ) {
+                            lastKingdom.remove(player.getUniqueId());
+                            updatePlayerLocation(player, loc);
+                        }
+                    }, () -> lastKingdom.remove(player.getUniqueId()));
         }
     }
 
