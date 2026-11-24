@@ -144,7 +144,6 @@ public class DatabaseService {
         // SQLite Optimizations & WAL Protocol
         config.setConnectionTestQuery("SELECT 1");
         config.setMaximumPoolSize(1);
-        config.setMaxLifetime(60000);
         config.setIdleTimeout(45000);
         config.setConnectionTimeout(10000);
         config.setPoolName("SQLiteHikariPool");
