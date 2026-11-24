@@ -57,15 +57,18 @@ public class KingdomCome extends JavaPlugin {
 
         // initialize services
         ClaimService claimService = new ClaimService(worldUuidList, claimsList, memberRepository, claimRepository);
-        MemberService memberService = new MemberService(membersList, memberRepository);
+        MemberService memberService = new MemberService(this, membersList, memberRepository);
         KingdomService kingdomService = new KingdomService(kingdomsList, kingdomRepository, memberService, claimService);
 
         // initialize listeners
+        KingdomBossbarListener bossBarListener = new KingdomBossbarListener(claimService, kingdomService, memberService);
+        memberService.addChangeListener(bossBarListener);
+
         List<Listener> listeners = List.of(
                 new MemberNameSyncListener(memberService),
                 new ClaimProtectionListener(this, claimService, memberService, kingdomService),
                 new PvPListener(memberService, claimService),
-                new KingdomBossbarListener(claimService, kingdomService, memberService)
+                bossBarListener
         );
 
         // register events

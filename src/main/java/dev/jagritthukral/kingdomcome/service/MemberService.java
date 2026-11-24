@@ -8,6 +8,8 @@ import dev.jagritthukral.kingdomcome.exception.MissingKingdomMembershipException
 import dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException;
 import dev.jagritthukral.kingdomcome.models.KingdomMember;
 import dev.jagritthukral.kingdomcome.models.KingdomPlayerRole;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -18,10 +20,12 @@ import static dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionEx
 
 public class MemberService {
     private final ConcurrentHashMap<UUID, KingdomMember> membersCache;
+    private final JavaPlugin plugin;
     private final MemberRepository memberRepository;
     private final List<MembershipChangeListener> changeListeners = new CopyOnWriteArrayList<>();
 
-    public MemberService(ArrayList<KingdomMember> membersList, MemberRepository memberRepository) {
+    public MemberService(JavaPlugin plugin, ArrayList<KingdomMember> membersList, MemberRepository memberRepository) {
+        this.plugin = plugin;
         this.membersCache = new ConcurrentHashMap<>();
         this.memberRepository = memberRepository;
         for (KingdomMember member : membersList) {
@@ -31,6 +35,18 @@ public class MemberService {
 
     public void addChangeListener(MembershipChangeListener listener) {
         changeListeners.add(listener);
+    }
+
+    private void notifyMembershipChanged(UUID playerUuid) {
+        if (changeListeners.isEmpty()) return;
+
+        // Ensure Bukkit API calls inside listeners (BossBar, Player#getLocation) run on the main thread
+        Bukkit.getScheduler()
+                .runTask(plugin, () -> {
+                    for (MembershipChangeListener listener : changeListeners) {
+                        listener.onMembershipChanged(playerUuid);
+                    }
+                });
     }
 
     public KingdomMember getMemberFromCache(UUID playerUuid) {
@@ -46,6 +62,7 @@ public class MemberService {
 
     void addMemberToCache(UUID playerUuid, KingdomMember member) {
         membersCache.put(playerUuid, member);
+        notifyMembershipChanged(playerUuid);
     }
 
     void removeMemberFromCache(UUID playerUuid) {
@@ -53,8 +70,16 @@ public class MemberService {
     }
 
     void removeKingdomMembersFromCache(long kingdomId) {
+        List<UUID> removedPlayers = new ArrayList<>();
         membersCache.values()
-                .removeIf(kingdomMember -> kingdomId == kingdomMember.kingdomId());
+                .removeIf(member -> {
+                    if (member.kingdomId() == kingdomId) {
+                        removedPlayers.add(member.playerUUID());
+                        return true;
+                    }
+                    return false;
+                });
+        removedPlayers.forEach(this::notifyMembershipChanged);
     }
 
     void updateMemberNameInCache(UUID playerUuid, String newName) {
@@ -90,6 +115,7 @@ public class MemberService {
                             .thenApply(_ -> {
                                 // add to cache if db operation succeeded
                                 addMemberToCache(targetPlayerUuid, new KingdomMember(executorKingdomMember.kingdomId(), targetPlayerUuid, targetPlayerName, KingdomPlayerRole.MEMBER, null));
+                                notifyMembershipChanged(targetPlayerUuid);
                                 return null;
                             });
                 });
@@ -150,7 +176,7 @@ public class MemberService {
         return memberRepository.kickKingdomMember(target.playerUUID(), executor.kingdomId())
                 .thenApply(_ -> {
                     removeMemberFromCache(target.playerUUID());
-                    changeListeners.forEach(l -> l.onMembershipChanged(target.playerUUID()));
+                    notifyMembershipChanged(target.playerUUID());
                     return null;
                 });
     }
