@@ -1,6 +1,7 @@
 package dev.jagritthukral.kingdomcome.service;
 
 import dev.jagritthukral.kingdomcome.database.repository.MemberRepository;
+import dev.jagritthukral.kingdomcome.events.MembershipChangeListener;
 import dev.jagritthukral.kingdomcome.exception.CantKickYourselfException;
 import dev.jagritthukral.kingdomcome.exception.DuplicateMemberNameException;
 import dev.jagritthukral.kingdomcome.exception.MissingKingdomMembershipException;
@@ -11,12 +12,14 @@ import dev.jagritthukral.kingdomcome.models.KingdomPlayerRole;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException.MissingPermission.*;
 
 public class MemberService {
     private final ConcurrentHashMap<UUID, KingdomMember> membersCache;
     private final MemberRepository memberRepository;
+    private final List<MembershipChangeListener> changeListeners = new CopyOnWriteArrayList<>();
 
     public MemberService(ArrayList<KingdomMember> membersList, MemberRepository memberRepository) {
         this.membersCache = new ConcurrentHashMap<>();
@@ -24,6 +27,10 @@ public class MemberService {
         for (KingdomMember member : membersList) {
             membersCache.put(member.playerUUID(), member);
         }
+    }
+
+    public void addChangeListener(MembershipChangeListener listener) {
+        changeListeners.add(listener);
     }
 
     public KingdomMember getMemberFromCache(UUID playerUuid) {
@@ -143,7 +150,9 @@ public class MemberService {
         return memberRepository.kickKingdomMember(target.playerUUID(), executor.kingdomId())
                 .thenApply(_ -> {
                     removeMemberFromCache(target.playerUUID());
+                    changeListeners.forEach(l -> l.onMembershipChanged(target.playerUUID()));
                     return null;
                 });
     }
+
 }

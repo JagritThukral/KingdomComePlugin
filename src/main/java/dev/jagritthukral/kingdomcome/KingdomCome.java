@@ -7,6 +7,7 @@ import dev.jagritthukral.kingdomcome.database.repository.ClaimRepository;
 import dev.jagritthukral.kingdomcome.database.repository.KingdomRepository;
 import dev.jagritthukral.kingdomcome.database.repository.MemberRepository;
 import dev.jagritthukral.kingdomcome.events.ClaimProtectionListener;
+import dev.jagritthukral.kingdomcome.events.KingdomBossbarListener;
 import dev.jagritthukral.kingdomcome.events.MemberNameSyncListener;
 import dev.jagritthukral.kingdomcome.events.PvPListener;
 import dev.jagritthukral.kingdomcome.models.Claim;
@@ -63,7 +64,8 @@ public class KingdomCome extends JavaPlugin {
         List<Listener> listeners = List.of(
                 new MemberNameSyncListener(memberService),
                 new ClaimProtectionListener(this, claimService, memberService, kingdomService),
-                new PvPListener(memberService, claimService)
+                new PvPListener(memberService, claimService),
+                new KingdomBossbarListener(claimService, kingdomService, memberService)
         );
 
         // register events
