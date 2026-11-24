@@ -72,10 +72,11 @@ public class ClaimService {
         return getClaimFromCache(worldUuid, getChunkKey(chunkX, chunkZ));
     }
 
+
     private void notifyChunkChanged(UUID worldUuid, int chunkX, int chunkZ) {
         if (changeListeners.isEmpty()) return;
-        Bukkit.getScheduler()
-                .runTask(plugin, () -> {
+        Bukkit.getGlobalRegionScheduler()
+                .run(plugin, _ -> {
                     for (ClaimChangeListener listener : changeListeners) {
                         listener.onChunkClaimChanged(worldUuid, chunkX, chunkZ);
                     }
@@ -85,8 +86,8 @@ public class ClaimService {
     private void notifyKingdomClaimsRemoved(long kingdomId) {
         if (changeListeners.isEmpty()) return;
         // run on main thread here, because we can't know which player to run this on, run on playerThread in BossBarListener 's onKingdomClaimsRemoved handler
-        Bukkit.getScheduler()
-                .runTask(plugin, () -> {
+        Bukkit.getGlobalRegionScheduler()
+                .run(plugin, (_) -> {
                     for (ClaimChangeListener listener : changeListeners) {
                         listener.onKingdomClaimsRemoved(kingdomId);
                     }
