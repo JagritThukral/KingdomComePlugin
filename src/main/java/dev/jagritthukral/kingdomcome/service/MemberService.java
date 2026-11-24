@@ -9,6 +9,7 @@ import dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException
 import dev.jagritthukral.kingdomcome.models.KingdomMember;
 import dev.jagritthukral.kingdomcome.models.KingdomPlayerRole;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
@@ -40,13 +41,17 @@ public class MemberService {
     private void notifyMembershipChanged(UUID playerUuid) {
         if (changeListeners.isEmpty()) return;
 
-        // Ensure Bukkit API calls inside listeners (BossBar, Player#getLocation) run on the main thread
-        Bukkit.getScheduler()
-                .runTask(plugin, () -> {
-                    for (MembershipChangeListener listener : changeListeners) {
-                        listener.onMembershipChanged(playerUuid);
-                    }
-                });
+        // Ensure Bukkit API calls inside listeners (BossBar, Player#getLocation) run on the player/main thread
+        Player player = Bukkit.getPlayer(playerUuid);
+
+        if (player != null) {
+            player.getScheduler()
+                    .run(plugin, (_) -> {
+                        for (MembershipChangeListener listener : changeListeners) {
+                            listener.onMembershipChanged(playerUuid);
+                        }
+                    }, null);
+        }
     }
 
     public KingdomMember getMemberFromCache(UUID playerUuid) {

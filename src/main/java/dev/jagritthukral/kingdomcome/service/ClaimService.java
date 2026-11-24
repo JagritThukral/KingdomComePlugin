@@ -84,6 +84,7 @@ public class ClaimService {
 
     private void notifyKingdomClaimsRemoved(long kingdomId) {
         if (changeListeners.isEmpty()) return;
+        // run on main thread here, because we can't know which player to run this on, run on playerThread in BossBarListener 's onKingdomClaimsRemoved handler
         Bukkit.getScheduler()
                 .runTask(plugin, () -> {
                     for (ClaimChangeListener listener : changeListeners) {

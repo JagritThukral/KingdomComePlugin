@@ -17,11 +17,13 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.*;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class KingdomBossbarListener implements Listener, MembershipChangeListener, ClaimChangeListener {
+    private final JavaPlugin plugin;
     private final ClaimService claimService;
     private final KingdomService kingdomService;
     private final MemberService memberService;
@@ -29,7 +31,8 @@ public class KingdomBossbarListener implements Listener, MembershipChangeListene
     private final ConcurrentHashMap<UUID, BossBar> playerBars = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Long> lastKingdom = new ConcurrentHashMap<>();
 
-    public KingdomBossbarListener(ClaimService claimService, KingdomService kingdomService, MemberService memberService) {
+    public KingdomBossbarListener(JavaPlugin plugin, ClaimService claimService, KingdomService kingdomService, MemberService memberService) {
+        this.plugin = plugin;
         this.claimService = claimService;
         this.kingdomService = kingdomService;
         this.memberService = memberService;
@@ -189,10 +192,13 @@ public class KingdomBossbarListener implements Listener, MembershipChangeListene
                 lastKingdom.remove(playerUuid);
                 Player player = Bukkit.getPlayer(playerUuid);
                 if (player != null) {
-                    removeBar(player);
-                } else {
-                    playerBars.remove(playerUuid);
+                    player.getScheduler()
+                            .run(plugin, (_) -> {
+                                removeBar(player);
+                            }, () -> playerBars.remove(playerUuid));
+                    return;
                 }
+                playerBars.remove(playerUuid);
             }
         });
     }
