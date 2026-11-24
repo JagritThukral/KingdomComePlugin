@@ -12,6 +12,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -174,18 +175,20 @@ public class KingdomBossbarListener implements Listener, MembershipChangeListene
         World world = Bukkit.getWorld(worldUuid);
         if (world == null) return;
 
-        // Refresh BossBar for any online player currently standing in that chunk
-        for (Player player : world.getPlayers()) {
-            player.getScheduler()
-                    .run(plugin, (_) -> {
-                        Location loc = player.getLocation();
-                        if ((loc.getBlockX() >> 4) == chunkX && (loc.getBlockZ() >> 4) == chunkZ) {
+        Bukkit.getRegionScheduler()
+                .run(plugin, world, chunkX, chunkZ, (_) -> {
+                    if (!world.isChunkLoaded(chunkX, chunkZ)) return;
+
+                    for (Entity entity : world.getChunkAt(chunkX, chunkZ)
+                            .getEntities()) {
+                        if (entity instanceof Player player) {
                             lastKingdom.remove(player.getUniqueId());
-                            updatePlayerLocation(player, loc);
+                            updatePlayerLocation(player, player.getLocation());
                         }
-                    }, () -> lastKingdom.remove(player.getUniqueId()));
-        }
+                    }
+                });
     }
+
 
     @Override
     public void onKingdomClaimsRemoved(long kingdomId) {
@@ -196,9 +199,7 @@ public class KingdomBossbarListener implements Listener, MembershipChangeListene
                 Player player = Bukkit.getPlayer(playerUuid);
                 if (player != null) {
                     player.getScheduler()
-                            .run(plugin, (_) -> {
-                                removeBar(player);
-                            }, () -> playerBars.remove(playerUuid));
+                            .run(plugin, (_) -> removeBar(player), () -> playerBars.remove(playerUuid));
                     return;
                 }
                 playerBars.remove(playerUuid);
