@@ -31,6 +31,7 @@ import java.util.UUID;
 public class KingdomCome extends JavaPlugin {
 
     private DatabaseService db;
+    private KingdomBossbarListener bossBarListener;
 
     @Override
     public void onEnable() {
@@ -61,7 +62,7 @@ public class KingdomCome extends JavaPlugin {
         KingdomService kingdomService = new KingdomService(kingdomsList, kingdomRepository, memberService, claimService);
 
         // initialize listeners
-        KingdomBossbarListener bossBarListener = new KingdomBossbarListener(claimService, kingdomService, memberService);
+        bossBarListener = new KingdomBossbarListener(claimService, kingdomService, memberService);
         memberService.addChangeListener(bossBarListener);
 
         List<Listener> listeners = List.of(
@@ -102,6 +103,9 @@ public class KingdomCome extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (bossBarListener != null) {
+            bossBarListener.removeAllBars();
+        }
         // Safely close the database connection pool on plugin disable/reload
         if (db != null) {
             try {

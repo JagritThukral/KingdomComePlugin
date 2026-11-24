@@ -140,6 +140,17 @@ public class KingdomBossbarListener implements Listener, MembershipChangeListene
         }
     }
 
+    public void removeAllBars() {
+        playerBars.forEach((uuid, bar) -> {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null) {
+                player.hideBossBar(bar);
+            }
+        });
+        playerBars.clear();
+        lastKingdom.clear();
+    }
+
     @Override
     public void onMembershipChanged(UUID playerUuid) {
         lastKingdom.remove(playerUuid); // Force a fresh color evaluation
