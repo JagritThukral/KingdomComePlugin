@@ -3,7 +3,16 @@ plugins {
 }
 
 group = "dev.jagritthukral"
-version = "1.0-SNAPSHOT"
+version = "0.1.0-SNAPSHOT"
+
+tasks.processResources {
+    val props = mapOf("version" to version)
+    inputs.properties(props)
+    filteringCharset = "UTF-8"
+    filesMatching(listOf("plugin.yml", "paper-plugin.yml")) {
+        expand(props)
+    }
+}
 
 repositories {
     mavenCentral()
