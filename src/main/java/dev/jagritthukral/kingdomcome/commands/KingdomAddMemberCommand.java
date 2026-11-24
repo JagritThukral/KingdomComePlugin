@@ -31,10 +31,10 @@ public class KingdomAddMemberCommand {
     public LiteralArgumentBuilder<CommandSourceStack> createCommand() {
         return Commands.literal("add")
                 .then(Commands.argument("PlayerName", ArgumentTypes.player())
-                        .executes(this::invitePlayer));
+                        .executes(this::addPlayer));
     }
 
-    private int invitePlayer(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+    private int addPlayer(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
 
         if (!(source.getExecutor() instanceof Player executorPlayer)) {
