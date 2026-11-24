@@ -66,7 +66,7 @@ public class KingdomCome extends JavaPlugin {
         memberService.addChangeListener(bossBarListener);
 
         List<Listener> listeners = List.of(
-                new MemberNameSyncListener(memberService),
+                new MemberNameSyncListener(this, memberService),
                 new ClaimProtectionListener(this, claimService, memberService, kingdomService),
                 new PvPListener(memberService, claimService),
                 bossBarListener

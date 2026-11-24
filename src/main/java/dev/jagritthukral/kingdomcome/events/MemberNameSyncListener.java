@@ -6,14 +6,17 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Objects;
 import java.util.UUID;
 
 public class MemberNameSyncListener implements Listener {
+    private final JavaPlugin plugin;
     private final MemberService memberService;
 
-    public MemberNameSyncListener(MemberService memberService) {
+    public MemberNameSyncListener(JavaPlugin plugin, MemberService memberService) {
+        this.plugin = plugin;
         this.memberService = memberService;
     }
 
@@ -27,7 +30,12 @@ public class MemberNameSyncListener implements Listener {
         if (cachedMember == null) return;
         // if playerName is not same as cached lasKnownName, update it
         if (!Objects.equals(newName, cachedMember.lastKnownName())) {
-            memberService.updateMemberName(playerUuid, newName);
+            memberService.updateMemberName(playerUuid, newName)
+                    .exceptionally(e -> {
+                        plugin.getSLF4JLogger()
+                                .error("failed to update member name", e);
+                        return null;
+                    });
         }
     }
 }
