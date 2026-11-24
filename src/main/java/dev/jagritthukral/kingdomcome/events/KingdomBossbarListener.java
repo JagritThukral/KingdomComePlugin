@@ -124,7 +124,7 @@ public class KingdomBossbarListener implements Listener, MembershipChangeListene
     }
 
     private void updateKingdomBar(Player player, String kingdomName, BossBar.Color color) {
-        Component title = Component.text(kingdomName, NamedTextColor.GOLD);
+        Component title = Component.text("Kingdom " + kingdomName + " 's Claim", NamedTextColor.GOLD);
 
         BossBar bar = playerBars.computeIfAbsent(player.getUniqueId(), _ -> {
             BossBar newBar = BossBar.bossBar(title, 1.0f, color, BossBar.Overlay.PROGRESS);
