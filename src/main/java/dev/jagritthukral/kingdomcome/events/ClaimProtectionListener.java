@@ -45,11 +45,12 @@ public class ClaimProtectionListener implements Listener {
         // If player is a server operator, let them modify blocks
         if (player.isOp()) return;
 
-        Chunk chunk = block.getChunk();
+        int chunkX = block.getX() >> 4;
+        int chunkZ = block.getZ() >> 4;
         UUID worldUuid = block.getWorld()
                 .getUID();
 
-        Claim cachedChunkClaim = claimService.getClaimFromCache(worldUuid, chunk.getX(), chunk.getZ());
+        Claim cachedChunkClaim = claimService.getClaimFromCache(worldUuid, chunkX, chunkZ);
 
         // If chunk doesn't exist in cache, it's wilderness; allow the action
         if (cachedChunkClaim == null) return;
