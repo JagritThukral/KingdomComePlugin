@@ -9,6 +9,7 @@ import dev.jagritthukral.kingdomcome.service.MemberService;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -77,7 +78,7 @@ public class KingdomBossbarListener implements Listener, MembershipChangeListene
     private void updatePlayerLocation(Player player, Location to) {
         UUID worldUuid = to.getWorld()
                 .getUID();
-        long chunkKey = Chunk.getChunkKey(to.getBlockX(), to.getBlockZ());
+        long chunkKey = Chunk.getChunkKey(to.getBlockX() >> 4, to.getBlockZ() >> 4);
         Claim claim = claimService.getClaimFromCache(worldUuid, chunkKey);
 
         // Unclaimed wilderness -> remove bar if present
@@ -95,18 +96,19 @@ public class KingdomBossbarListener implements Listener, MembershipChangeListene
         }
         lastKingdom.put(player.getUniqueId(), kingdomId);
 
-        // Fetch kingdom details & determine diplomacy color
+        // Fetch kingdom details
         Kingdom kingdom = kingdomService.getKingdomFromCache(kingdomId);
         if (kingdom == null) {
+            lastKingdom.remove(player.getUniqueId());
             removeBar(player);
             return;
         }
-
-        BossBar.Color barColor = resolveBarColor(player, kingdom, claim);
+        // determine diplomacy color
+        BossBar.Color barColor = resolveBarColor(player, claim);
         updateKingdomBar(player, kingdom.name(), barColor);
     }
 
-    private BossBar.Color resolveBarColor(Player player, Kingdom kingdom, Claim claim) {
+    private BossBar.Color resolveBarColor(Player player, Claim claim) {
         KingdomMember cachedMember = memberService.getMemberFromCache(player.getUniqueId());
         if (cachedMember == null || claim == null) return BossBar.Color.YELLOW; // fallback color
         // if player is in their kingdom 's claim
@@ -121,7 +123,7 @@ public class KingdomBossbarListener implements Listener, MembershipChangeListene
     private void updateKingdomBar(Player player, String kingdomName, BossBar.Color color) {
         Component title = Component.text(kingdomName, NamedTextColor.GOLD);
 
-        BossBar bar = playerBars.computeIfAbsent(player.getUniqueId(), uuid -> {
+        BossBar bar = playerBars.computeIfAbsent(player.getUniqueId(), _ -> {
             BossBar newBar = BossBar.bossBar(title, 1.0f, color, BossBar.Overlay.PROGRESS);
             player.showBossBar(newBar);
             return newBar;
@@ -140,9 +142,13 @@ public class KingdomBossbarListener implements Listener, MembershipChangeListene
 
     @Override
     public void onMembershipChanged(UUID playerUuid) {
-        KingdomMember cachedMember = memberService.getMemberFromCache(playerUuid);
-        if (cachedMember == null) {
-
+        lastKingdom.remove(playerUuid); // Force a fresh color evaluation
+        Player player = Bukkit.getPlayer(playerUuid);
+        if (player == null) {
+            playerBars.remove(playerUuid);
+            return;
         }
+        updatePlayerLocation(player, player.getLocation());
+
     }
 }
