@@ -179,7 +179,8 @@ public class KingdomBossbarListener implements Listener, MembershipChangeListene
             Location loc = player.getLocation();
             if ((loc.getBlockX() >> 4) == chunkX && (loc.getBlockZ() >> 4) == chunkZ) {
                 lastKingdom.remove(player.getUniqueId());
-                updatePlayerLocation(player, loc);
+                player.getScheduler()
+                        .run(plugin, (_) -> updatePlayerLocation(player, loc), null);
             }
         }
     }
