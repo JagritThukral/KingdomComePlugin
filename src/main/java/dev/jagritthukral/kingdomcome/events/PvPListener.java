@@ -5,16 +5,13 @@ import dev.jagritthukral.kingdomcome.models.KingdomMember;
 import dev.jagritthukral.kingdomcome.service.ClaimService;
 import dev.jagritthukral.kingdomcome.service.MemberService;
 import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.AreaEffectCloudApplyEvent;
-import org.bukkit.event.entity.EntityCombustByEntityEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.PotionSplashEvent;
+import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.potion.PotionEffectType;
 
@@ -41,15 +38,21 @@ public class PvPListener implements Listener {
         if (attackerMember != null && victimMember != null && victimMember.kingdomId() == attackerMember.kingdomId()) {
             return false;
         }
-
+        Location victimLoc = victim.getLocation();
         Claim victimClaim = claimService.getClaimFromCache(
-                victim.getWorld()
-                        .getUID(), victim.getChunk()
-                        .getChunkKey());
+                victimLoc.getWorld()
+                        .getUID(),
+                victimLoc.getBlockX() >> 4,
+                victimLoc.getBlockZ() >> 4
+        );
+
+        Location attackerLoc = attacker.getLocation();
         Claim attackerClaim = claimService.getClaimFromCache(
-                attacker.getWorld()
-                        .getUID(), attacker.getChunk()
-                        .getChunkKey());
+                attackerLoc.getWorld()
+                        .getUID(),
+                attackerLoc.getBlockX() >> 4,
+                attackerLoc.getBlockZ() >> 4
+        );
         // Allow PvP only if both players are in the wilderness
         if (victimClaim == null && attackerClaim == null) {
             return true;

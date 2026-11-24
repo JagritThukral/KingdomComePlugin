@@ -2,11 +2,14 @@ package dev.jagritthukral.kingdomcome.service;
 
 import dev.jagritthukral.kingdomcome.database.repository.ClaimRepository;
 import dev.jagritthukral.kingdomcome.database.repository.MemberRepository;
+import dev.jagritthukral.kingdomcome.events.ClaimChangeListener;
 import dev.jagritthukral.kingdomcome.exception.MissingKingdomMembershipException;
 import dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException;
 import dev.jagritthukral.kingdomcome.models.Claim;
 import dev.jagritthukral.kingdomcome.models.ClaimStatus;
 import dev.jagritthukral.kingdomcome.models.KingdomMember;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.jctools.maps.NonBlockingHashMapLong;
 
 import java.util.ArrayList;
@@ -14,17 +17,21 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException.MissingPermission.CLAIM_CHUNK;
 import static dev.jagritthukral.kingdomcome.exception.MissingKingdomPermissionException.MissingPermission.UNCLAIM_CHUNK;
 
 public class ClaimService {
     // use jctools 's nonblocking-hashmap-long so lookups don't allocate a Long per call (except 127 to -128 which is cached by Long.valueOf())  bcs long is autoboxed to Long by compiler (concurrentHashMap only accept objects) using Long.valueOf()
+    private final JavaPlugin plugin;
+    private final List<ClaimChangeListener> changeListeners = new CopyOnWriteArrayList<>();
     private final ConcurrentHashMap<UUID, NonBlockingHashMapLong<Claim>> worldsClaimsCache;
     private final MemberRepository memberRepository;
     private final ClaimRepository claimRepository;
 
-    public ClaimService(List<UUID> worldsUuidList, ArrayList<Claim> claimsList, MemberRepository memberRepository, ClaimRepository claimRepository) {
+    public ClaimService(JavaPlugin plugin, List<UUID> worldsUuidList, ArrayList<Claim> claimsList, MemberRepository memberRepository, ClaimRepository claimRepository) {
+        this.plugin = plugin;
         this.worldsClaimsCache = new ConcurrentHashMap<>();
         this.memberRepository = memberRepository;
         this.claimRepository = claimRepository;
@@ -35,6 +42,10 @@ public class ClaimService {
         for (Claim claim : claimsList) {
             addClaimIntoCache(claim);
         }
+    }
+
+    public void addChangeListener(ClaimChangeListener listener) {
+        changeListeners.add(listener);
     }
 
     // convert x to long, convert z into long and shift by 32 bit.
@@ -55,6 +66,30 @@ public class ClaimService {
     public Claim getClaimFromCache(UUID worldUuid, long chunkKey) {
         NonBlockingHashMapLong<Claim> worldMap = worldsClaimsCache.get(worldUuid);
         return worldMap != null ? worldMap.get(chunkKey) : null;
+    }
+
+    public Claim getClaimFromCache(UUID worldUuid, int chunkX, int chunkZ) {
+        return getClaimFromCache(worldUuid, getChunkKey(chunkX, chunkZ));
+    }
+
+    private void notifyChunkChanged(UUID worldUuid, int chunkX, int chunkZ) {
+        if (changeListeners.isEmpty()) return;
+        Bukkit.getScheduler()
+                .runTask(plugin, () -> {
+                    for (ClaimChangeListener listener : changeListeners) {
+                        listener.onChunkClaimChanged(worldUuid, chunkX, chunkZ);
+                    }
+                });
+    }
+
+    private void notifyKingdomClaimsRemoved(long kingdomId) {
+        if (changeListeners.isEmpty()) return;
+        Bukkit.getScheduler()
+                .runTask(plugin, () -> {
+                    for (ClaimChangeListener listener : changeListeners) {
+                        listener.onKingdomClaimsRemoved(kingdomId);
+                    }
+                });
     }
 
     public void addClaimIntoCache(Claim claim) {
@@ -81,6 +116,7 @@ public class ClaimService {
         worldsClaimsCache.values()
                 .forEach(worldMap -> worldMap.values()
                         .removeIf(claim -> claim.kingdomId() == kingdom_id));
+        notifyKingdomClaimsRemoved(kingdom_id);
     }
 
     public CompletableFuture<ClaimStatus> claimChunk(UUID playerUuid, int chunkX, int chunkZ, UUID worldUuid) {
@@ -97,6 +133,7 @@ public class ClaimService {
                                 // only add to cache if db succeeded
                                 if (status == ClaimStatus.CLAIMED) {
                                     addClaimIntoCache(new Claim(member.kingdomId(), chunkX, chunkZ, worldUuid));
+                                    notifyChunkChanged(worldUuid, chunkX, chunkZ);
                                 }
                                 return status;
                             });
@@ -115,6 +152,7 @@ public class ClaimService {
                             .thenApply(status -> {
                                 if (status == ClaimStatus.UNCLAIMED) {
                                     removeClaimFromCache(worldUuid, chunkX, chunkZ);
+                                    notifyChunkChanged(worldUuid, chunkX, chunkZ);
                                 }
                                 return status;
                             });

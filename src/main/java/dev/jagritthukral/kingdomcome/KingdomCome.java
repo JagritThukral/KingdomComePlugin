@@ -57,7 +57,7 @@ public class KingdomCome extends JavaPlugin {
                 .join();
 
         // initialize services
-        ClaimService claimService = new ClaimService(worldUuidList, claimsList, memberRepository, claimRepository);
+        ClaimService claimService = new ClaimService(this, worldUuidList, claimsList, memberRepository, claimRepository);
         MemberService memberService = new MemberService(this, membersList, memberRepository);
         KingdomService kingdomService = new KingdomService(kingdomsList, kingdomRepository, memberService, claimService);
 

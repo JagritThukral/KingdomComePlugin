@@ -10,8 +10,8 @@ import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -21,7 +21,7 @@ import org.bukkit.event.player.*;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class KingdomBossbarListener implements Listener, MembershipChangeListener {
+public class KingdomBossbarListener implements Listener, MembershipChangeListener, ClaimChangeListener {
     private final ClaimService claimService;
     private final KingdomService kingdomService;
     private final MemberService memberService;
@@ -78,8 +78,11 @@ public class KingdomBossbarListener implements Listener, MembershipChangeListene
     private void updatePlayerLocation(Player player, Location to) {
         UUID worldUuid = to.getWorld()
                 .getUID();
-        long chunkKey = Chunk.getChunkKey(to.getBlockX() >> 4, to.getBlockZ() >> 4);
-        Claim claim = claimService.getClaimFromCache(worldUuid, chunkKey);
+        int chunkX = to.getBlockX() >> 4;
+        int chunkZ = to.getBlockZ() >> 4;
+
+        // Uses ClaimService's matching bit-shifted chunk key
+        Claim claim = claimService.getClaimFromCache(worldUuid, chunkX, chunkZ);
 
         // Unclaimed wilderness -> remove bar if present
         if (claim == null) {
@@ -161,5 +164,36 @@ public class KingdomBossbarListener implements Listener, MembershipChangeListene
         }
         updatePlayerLocation(player, player.getLocation());
 
+    }
+
+    @Override
+    public void onChunkClaimChanged(UUID worldUuid, int chunkX, int chunkZ) {
+        World world = Bukkit.getWorld(worldUuid);
+        if (world == null) return;
+
+        // Refresh BossBar for any online player currently standing in that chunk
+        for (Player player : world.getPlayers()) {
+            Location loc = player.getLocation();
+            if ((loc.getBlockX() >> 4) == chunkX && (loc.getBlockZ() >> 4) == chunkZ) {
+                lastKingdom.remove(player.getUniqueId());
+                updatePlayerLocation(player, loc);
+            }
+        }
+    }
+
+    @Override
+    public void onKingdomClaimsRemoved(long kingdomId) {
+        // Any player whose last known kingdom was the disbanded one needs their bar removed
+        lastKingdom.forEach((playerUuid, lastKingdomId) -> {
+            if (lastKingdomId == kingdomId) {
+                lastKingdom.remove(playerUuid);
+                Player player = Bukkit.getPlayer(playerUuid);
+                if (player != null) {
+                    removeBar(player);
+                } else {
+                    playerBars.remove(playerUuid);
+                }
+            }
+        });
     }
 }

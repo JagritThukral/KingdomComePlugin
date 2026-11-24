@@ -49,7 +49,7 @@ public class ClaimProtectionListener implements Listener {
         UUID worldUuid = block.getWorld()
                 .getUID();
 
-        Claim cachedChunkClaim = claimService.getClaimFromCache(worldUuid, chunk.getChunkKey());
+        Claim cachedChunkClaim = claimService.getClaimFromCache(worldUuid, chunk.getX(), chunk.getZ());
 
         // If chunk doesn't exist in cache, it's wilderness; allow the action
         if (cachedChunkClaim == null) return;
