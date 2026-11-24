@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "dev.jagritthukral"
-version = "0.1.9-SNAPSHOT"
+version = "0.1.10-SNAPSHOT"
 
 tasks.processResources {
     val props = mapOf("version" to version)

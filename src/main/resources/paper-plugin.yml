@@ -4,3 +4,4 @@ version: '${version}'
 api-version: '26.3'
 main: dev.jagritthukral.kingdomcome.KingdomCome
 loader: dev.jagritthukral.kingdomcome.KingdomComeLoader
+folia-supported: true
