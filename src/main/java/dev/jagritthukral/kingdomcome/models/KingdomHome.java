@@ -7,7 +7,7 @@ import org.bukkit.World;
 
 import java.util.UUID;
 
-public record KingdomHome(UUID world_uuid, double x, double y, double z) {
+public record KingdomHome(UUID worldUuid, double x, double y, double z) {
     // Secondary constructor to create a KingdomHome directly from a Bukkit Location
     public KingdomHome(Location location) {
         if (location == null || location.getWorld() == null) {
@@ -24,9 +24,9 @@ public record KingdomHome(UUID world_uuid, double x, double y, double z) {
     }
 
     public Location getBukkitLocation() {
-        World world = Bukkit.getWorld(world_uuid);
+        World world = Bukkit.getWorld(worldUuid);
         if (world == null) {
-            throw new WorldNotLoadedException("World: " + world_uuid + " not loaded");
+            throw new WorldNotLoadedException("World: " + worldUuid + " not loaded");
         }
         return new Location(world, x, y, z);
     }

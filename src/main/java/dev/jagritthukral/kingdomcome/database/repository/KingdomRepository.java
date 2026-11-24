@@ -178,7 +178,7 @@ public class KingdomRepository {
         return CompletableFuture.runAsync(() -> {
             String addHomeSql = "UPDATE Kingdoms SET home_world_uuid = ?,home_x = ?,home_y = ?,home_z = ? WHERE kingdom_id = ?;";
             try (Connection connection = db.getConnection(); PreparedStatement addHomeStmt = connection.prepareStatement(addHomeSql)) {
-                addHomeStmt.setString(1, home.world_uuid()
+                addHomeStmt.setString(1, home.worldUuid()
                         .toString());
                 addHomeStmt.setDouble(2, home.x());
                 addHomeStmt.setDouble(3, home.y());
