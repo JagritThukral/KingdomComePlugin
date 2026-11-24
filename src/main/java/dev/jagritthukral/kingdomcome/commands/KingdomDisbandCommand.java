@@ -47,7 +47,7 @@ public class KingdomDisbandCommand {
             source.getSender()
                     .sendMessage("An internal error occurred while running this command.");
             plugin.getSLF4JLogger()
-                    .error(e.toString());
+                    .error("Failed to disband kingdom", e);
             return 0;
         }
     }
