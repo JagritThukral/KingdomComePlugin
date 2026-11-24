@@ -115,7 +115,6 @@ public class MemberService {
                             .thenApply(_ -> {
                                 // add to cache if db operation succeeded
                                 addMemberToCache(targetPlayerUuid, new KingdomMember(executorKingdomMember.kingdomId(), targetPlayerUuid, targetPlayerName, KingdomPlayerRole.MEMBER, null));
-                                notifyMembershipChanged(targetPlayerUuid);
                                 return null;
                             });
                 });
